@@ -1,0 +1,9 @@
+[
+  {"name":"Netflix","cancelURL":"https://www.netflix.com/cancel","appURLScheme":null},
+  {"name":"Spotify","cancelURL":"https://www.spotify.com/account/subscription","appURLScheme":null},
+  {"name":"Amazon Prime","cancelURL":"https://www.amazon.com/gp/primecentral","appURLScheme":null},
+  {"name":"YouTube Premium","cancelURL":"https://myaccount.google.com/subscriptions","appURLScheme":null},
+  {"name":"iCloud+","cancelURL":"https://support.apple.com/en-us/HT202039","appURLScheme":null}
+]
+
+

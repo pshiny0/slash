@@ -1,0 +1,87 @@
+name: Slash
+options:
+  minimumXcodeGenVersion: 2.33.0
+  deploymentTarget:
+    iOS: 16.0
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.shiny.slash
+    SWIFT_VERSION: 5.9
+    IPHONEOS_DEPLOYMENT_TARGET: 16.0
+    DEVELOPMENT_TEAM: ""
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0
+packages:
+  firebase-ios-sdk:
+    url: https://github.com/firebase/firebase-ios-sdk
+    majorVersion: 10.20.0
+  GoogleSignIn-iOS:
+    url: https://github.com/google/GoogleSignIn-iOS
+    majorVersion: 7.0.0
+targets:
+  Slash:
+    type: application
+    platform: iOS
+    settings:
+      base:
+        PRODUCT_NAME: Slash
+        CODE_SIGN_ENTITLEMENTS: Slash/Slash.entitlements
+    sources:
+      - path: SlashApp.swift
+      - path: Models
+      - path: Services
+      - path: Views
+      - path: Utilities
+      - path: Resources
+        type: resources
+        includes:
+          - services.json
+          - GoogleService-Info.plist
+          - TANTangkiwood-Display.ttf
+          - slash.png
+          - icons
+          - FONT_README.md
+      - path: Assets.xcassets
+        type: resources
+      - path: Slash/Slash.entitlements
+        optional: false
+        type: file
+    dependencies:
+      - package: firebase-ios-sdk
+        products:
+          - FirebaseAuth
+          - FirebaseFirestore
+      - package: GoogleSignIn-iOS
+        products:
+          - GoogleSignIn
+    info:
+      path: Slash/Info.plist
+      properties:
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleName: Slash
+        CFBundleDisplayName: Slash
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIUserInterfaceStyle: Automatic
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UIRequiredDeviceCapabilities:
+          - arm64
+        NSCalendarsUsageDescription: Scheduling renewal reminders
+        NSPhotoLibraryAddUsageDescription: Optional export (future)
+        NSUserTrackingUsageDescription: Optional analytics (future)
+        UIAppFonts:
+          - TANTangkiwood-Display.ttf
+        CFBundleURLTypes:
+          - CFBundleURLName: GoogleSignIn
+            CFBundleURLSchemes:
+              - com.googleusercontent.apps.92131788097-papp0nbv79pfdol69tlrgc82kvo6h2jr
+    scheme:
+      testTargets: []
+    prebuildScripts: []
+    postbuildScripts: []
+
