@@ -2,21 +2,21 @@
 import os
 import subprocess
 
-SOURCE_DIR = "/Users/shinypidugu/Projects/Slash/Resources/icons/app-icon"
-TARGET_DIR = "/Users/shinypidugu/Projects/Slash/AppIcons"
+SOURCE_DIR = "/Users/shinypidugu/Github/slash/Resources/icons/app-icon"
+TARGET_DIR = "/Users/shinypidugu/Github/slash/AppIcons"
 
 # Icon names
 ICONS = [
-    "black-white-outline-monogram",
-    "black-white-solid-monogram",
-    "black-white-title",
-    "blue-white-outline-monogram",
-    "blue-white-solid-monogram",
-    "blue-white-title",
-    "white-black-solid-monogram",
-    "white-black-title",
-    "white-blue-solid-monogram",
-    "white-blue-title"
+    "blueprint",
+    "blueprint-echo",
+    "graphite",
+    "graphite-echo",
+    "lumen-black",
+    "lumen-blue",
+    "studio-black",
+    "studio-blue",
+    "wireframe-black",
+    "wireframe-blue"
 ]
 
 # Clear existing PNG files

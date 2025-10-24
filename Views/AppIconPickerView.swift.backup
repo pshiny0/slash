@@ -79,6 +79,7 @@ struct AppIconCard: View {
                                 )
                         )
                 } else {
+                    print("DEBUG: No image found for AppIcon-\(icon.rawValue)")
                     // Fallback to a colored placeholder
                     RoundedRectangle(cornerRadius: 12)
                         .fill(icon.previewColor)

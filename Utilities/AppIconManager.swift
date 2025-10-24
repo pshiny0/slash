@@ -3,7 +3,7 @@ import UIKit
 
 // MARK: - App Icon Manager
 class AppIconManager: ObservableObject {
-    @Published var currentIcon: AppIcon = .blackWhiteOutlineMonogram
+    @Published var currentIcon: AppIcon = .blueprint
     
     init() {
         print("AppIconManager initialized")
@@ -87,8 +87,8 @@ class AppIconManager: ObservableObject {
             print("Loaded current icon: \(iconName)")
         } else {
             // No alternate icon is set, so we're using the default
-            currentIcon = .blackWhiteOutlineMonogram
-            print("Using default icon: black-white-outline-monogram")
+            currentIcon = .blueprint
+            print("Using default icon: blueprint")
         }
     }
     
@@ -99,77 +99,79 @@ class AppIconManager: ObservableObject {
 
 // MARK: - App Icon Enum
 enum AppIcon: String, CaseIterable, Identifiable {
-    case blackWhiteOutlineMonogram = "black-white-outline-monogram"
-    case blackWhiteSolidMonogram = "black-white-solid-monogram"
-    case blackWhiteTitle = "black-white-title"
-    case blueWhiteOutlineMonogram = "blue-white-outline-monogram"
-    case blueWhiteSolidMonogram = "blue-white-solid-monogram"
-    case blueWhiteTitle = "blue-white-title"
-    case whiteBlackSolidMonogram = "white-black-solid-monogram"
-    case whiteBlackTitle = "white-black-title"
-    case whiteBlueSolidMonogram = "white-blue-solid-monogram"
-    case whiteBlueTitle = "white-blue-title"
+    case blueprint = "blueprint"
+    case blueprintEcho = "blueprint-echo"
+    case graphite = "graphite"
+    case graphiteEcho = "graphite-echo"
+    case lumenBlack = "lumen-black"
+    case lumenBlue = "lumen-blue"
+    case studioBlack = "studio-black"
+    case studioBlue = "studio-blue"
+    case wireframeBlack = "wireframe-black"
+    case wireframeBlue = "wireframe-blue"
     
     var id: String { rawValue }
     
     var displayName: String {
         switch self {
-        case .blackWhiteOutlineMonogram:
-            return "Black White Outline"
-        case .blackWhiteSolidMonogram:
-            return "Black White Solid"
-        case .blackWhiteTitle:
-            return "Black White Title"
-        case .blueWhiteOutlineMonogram:
-            return "Blue White Outline"
-        case .blueWhiteSolidMonogram:
-            return "Blue White Solid"
-        case .blueWhiteTitle:
-            return "Blue White Title"
-        case .whiteBlackSolidMonogram:
-            return "White Black Solid"
-        case .whiteBlackTitle:
-            return "White Black Title"
-        case .whiteBlueSolidMonogram:
-            return "White Blue Solid"
-        case .whiteBlueTitle:
-            return "White Blue Title"
+        case .blueprint:
+            return "Blueprint"
+        case .blueprintEcho:
+            return "Blueprint Echo"
+        case .graphite:
+            return "Graphite"
+        case .graphiteEcho:
+            return "Graphite Echo"
+        case .lumenBlack:
+            return "Lumen Black"
+        case .lumenBlue:
+            return "Lumen Blue"
+        case .studioBlack:
+            return "Studio Black"
+        case .studioBlue:
+            return "Studio Blue"
+        case .wireframeBlack:
+            return "Wireframe Black"
+        case .wireframeBlue:
+            return "Wireframe Blue"
         }
     }
     
     var description: String {
         switch self {
-        case .blackWhiteOutlineMonogram:
-            return "Black and white outline monogram design"
-        case .blackWhiteSolidMonogram:
-            return "Black and white solid monogram design"
-        case .blackWhiteTitle:
-            return "Black and white with title text"
-        case .blueWhiteOutlineMonogram:
-            return "Blue and white outline monogram design"
-        case .blueWhiteSolidMonogram:
-            return "Blue and white solid monogram design"
-        case .blueWhiteTitle:
-            return "Blue and white with title text"
-        case .whiteBlackSolidMonogram:
-            return "White and black solid monogram design"
-        case .whiteBlackTitle:
-            return "White and black with title text"
-        case .whiteBlueSolidMonogram:
-            return "White and blue solid monogram design"
-        case .whiteBlueTitle:
-            return "White and blue with title text"
+        case .blueprint:
+            return "Clean blueprint design"
+        case .blueprintEcho:
+            return "Blueprint design with echo effect"
+        case .graphite:
+            return "Modern graphite design"
+        case .graphiteEcho:
+            return "Graphite design with echo effect"
+        case .lumenBlack:
+            return "Lumen design in black"
+        case .lumenBlue:
+            return "Lumen design in blue"
+        case .studioBlack:
+            return "Studio design in black"
+        case .studioBlue:
+            return "Studio design in blue"
+        case .wireframeBlack:
+            return "Wireframe design in black"
+        case .wireframeBlue:
+            return "Wireframe design in blue"
         }
     }
     
     var previewColor: Color {
         switch self {
-        case .blackWhiteOutlineMonogram, .blackWhiteSolidMonogram, .blackWhiteTitle:
-            return .black
-        case .blueWhiteOutlineMonogram, .blueWhiteSolidMonogram, .blueWhiteTitle, .whiteBlueSolidMonogram, .whiteBlueTitle:
+        case .blueprint, .blueprintEcho:
             return .blue
-        case .whiteBlackSolidMonogram, .whiteBlackTitle:
-            return .white
+        case .graphite, .graphiteEcho:
+            return .gray
+        case .lumenBlack, .studioBlack, .wireframeBlack:
+            return .black
+        case .lumenBlue, .studioBlue, .wireframeBlue:
+            return .blue
         }
     }
 }

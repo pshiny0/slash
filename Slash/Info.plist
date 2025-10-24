@@ -1,161 +1,71 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>Slash</string>
+	<string>en</string>
+
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+
 	<key>CFBundleName</key>
 	<string>Slash</string>
+
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
+
 	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>GoogleSignIn</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.92131788097-papp0nbv79pfdol69tlrgc82kvo6h2jr</string>
-			</array>
-		</dict>
-	</array>
+	<string>1.0</string>
+
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>NSCalendarsUsageDescription</key>
-	<string>Scheduling renewal reminders</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Optional export (future)</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Optional analytics (future)</string>
-	<key>UIAppFonts</key>
-	<array>
-		<string>TANTangkiwood-Display.ttf</string>
-	</array>
+	<string>1</string>
+
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
-	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string>LaunchBackground</string>
-	</dict>
+
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+
+	<key>UIMainStoryboardFile</key>
+	<string></string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>TANTangkiwood-Display.ttf</string>
+	</array>
+
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
 	</array>
+
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UIUserInterfaceStyle</key>
-	<string>Automatic</string>
+
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<true/>
+
 	<key>CFBundleIcons</key>
 	<dict>
-		<key>CFBundleAlternateIcons</key>
-		<dict>
-			<key>black-white-outline-monogram</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-black-white-outline-monogram</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>black-white-solid-monogram</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-black-white-solid-monogram</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>black-white-title</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-black-white-title</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>blue-white-outline-monogram</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-blue-white-outline-monogram</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>blue-white-solid-monogram</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-blue-white-solid-monogram</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>blue-white-title</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-blue-white-title</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>white-black-solid-monogram</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-white-black-solid-monogram</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>white-black-title</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-white-black-title</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>white-blue-solid-monogram</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-white-blue-solid-monogram</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-			<key>white-blue-title</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-white-blue-title</string>
-				</array>
-				<key>UIPrerenderedIcon</key>
-				<false/>
-			</dict>
-		</dict>
 		<key>CFBundlePrimaryIcon</key>
 		<dict>
 			<key>CFBundleIconFiles</key>
@@ -164,6 +74,89 @@
 			</array>
 			<key>UIPrerenderedIcon</key>
 			<false/>
+		</dict>
+
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>blueprint</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-blueprint</string>
+				</array>
+			</dict>
+
+			<key>blueprint-echo</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-blueprint-echo</string>
+				</array>
+			</dict>
+
+			<key>graphite</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-graphite</string>
+				</array>
+			</dict>
+
+			<key>graphite-echo</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-graphite-echo</string>
+				</array>
+			</dict>
+
+			<key>lumen-black</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-lumen-black</string>
+				</array>
+			</dict>
+
+			<key>lumen-blue</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-lumen-blue</string>
+				</array>
+			</dict>
+
+			<key>studio-black</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-studio-black</string>
+				</array>
+			</dict>
+
+			<key>studio-blue</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-studio-blue</string>
+				</array>
+			</dict>
+
+			<key>wireframe-black</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-wireframe-black</string>
+				</array>
+			</dict>
+
+			<key>wireframe-blue</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-wireframe-blue</string>
+				</array>
+			</dict>
 		</dict>
 	</dict>
 </dict>
