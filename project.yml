@@ -26,6 +26,7 @@ targets:
       base:
         PRODUCT_NAME: Slash
         CODE_SIGN_ENTITLEMENTS: Slash/Slash.entitlements
+        TARGETED_DEVICE_FAMILY: "1"  # iPhone only
     sources:
       - path: SlashApp.swift
       - path: Models
@@ -80,6 +81,38 @@ targets:
           - CFBundleURLName: GoogleSignIn
             CFBundleURLSchemes:
               - com.googleusercontent.apps.92131788097-papp0nbv79pfdol69tlrgc82kvo6h2jr
+        CFBundleIcons:
+          CFBundlePrimaryIcon:
+            CFBundleIconFiles:
+              - AppIcon
+          CFBundleAlternateIcons:
+            blueprint-echo:
+              CFBundleIconFiles:
+                - AppIcon-blueprint-echo
+            graphite:
+              CFBundleIconFiles:
+                - AppIcon-graphite
+            "graphite-echo":
+              CFBundleIconFiles:
+                - AppIcon-graphite-echo
+            "lumen-black":
+              CFBundleIconFiles:
+                - AppIcon-lumen-black
+            "lumen-blue":
+              CFBundleIconFiles:
+                - AppIcon-lumen-blue
+            "studio-black":
+              CFBundleIconFiles:
+                - AppIcon-studio-black
+            "studio-blue":
+              CFBundleIconFiles:
+                - AppIcon-studio-blue
+            "wireframe-black":
+              CFBundleIconFiles:
+                - AppIcon-wireframe-black
+            "wireframe-blue":
+              CFBundleIconFiles:
+                - AppIcon-wireframe-blue
     scheme:
       testTargets: []
     prebuildScripts: []

@@ -76,6 +76,7 @@ final class DataManager: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] subs in
                 self?.subscriptions = subs
+                self?.processRenewalsIfNeeded()
             }
             .store(in: &cancellables)
     }
@@ -84,6 +85,99 @@ final class DataManager: ObservableObject {
         // Cancel existing listener and restart it to force refresh
         cancellables.removeAll()
         startSubscriptionsListener()
+    }
+
+    // MARK: - Renewal Processing
+    private func processRenewalsIfNeeded() {
+        guard !subscriptions.isEmpty else { return }
+        let today = Calendar.current.startOfDay(for: Date())
+        for var sub in subscriptions {
+            let due = Calendar.current.startOfDay(for: sub.renewalDate)
+            
+            // Schedule notifications only - do NOT automatically update renewal dates
+            // Users must manually confirm renewals
+            switch sub.renewalPreference {
+            case .autoRenew:
+                // schedule soft reminder on renewal day
+                NotificationsManager.cancelReminder(for: sub)
+                NotificationsManager.scheduleSoftRenewalDay(for: sub)
+                // Don't automatically update renewal date - user must confirm
+                if today >= due && sub.status == .active {
+                    // Mark as needing update when past due (but don't auto-update the date)
+                    sub.status = .pendingDecision
+                    Task { try? await self.updateSubscription(sub) }
+                }
+            case .askMeFirst:
+                // schedule 3-day prior reminder
+                NotificationsManager.cancelReminder(for: sub)
+                NotificationsManager.scheduleAskMeFirstReminder(for: sub)
+                if today >= due {
+                    if sub.status != .active { continue }
+                    // Mark as needing update when past due
+                    sub.status = .pendingDecision
+                    Task { try? await self.updateSubscription(sub) }
+                }
+            case .oneTimeTrial:
+                // schedule 1-day prior reminder
+                NotificationsManager.cancelReminder(for: sub)
+                NotificationsManager.scheduleOneTimeEndingReminder(for: sub)
+                if today >= due {
+                    // Mark trial as ended when past due
+                    sub.status = .ended
+                    Task { try? await self.updateSubscription(sub) }
+                }
+            }
+        }
+    }
+
+    func confirmRenewal(for subscriptionId: String) {
+        guard var sub = subscriptions.first(where: { $0.id == subscriptionId }) else { return }
+        
+        // Allow renewal confirmation for any subscription that is past due or pending
+        // Only proceed if pending decision or on/after due date
+        let today = Calendar.current.startOfDay(for: Date())
+        let due = Calendar.current.startOfDay(for: sub.renewalDate)
+        
+        // Skip one-time trials - they should remain ended
+        guard sub.renewalPreference != .oneTimeTrial else { return }
+        
+        if today >= due || sub.status == .pendingDecision {
+            // Manually update renewal date only after user confirmation
+            sub.renewalDate = sub.billingCycle.calculateRenewalDate(from: sub.renewalDate)
+            sub.status = .active
+            NotificationsManager.cancelReminder(for: sub)
+            
+            // Schedule appropriate reminder based on renewal preference
+            switch sub.renewalPreference {
+            case .autoRenew:
+                NotificationsManager.scheduleSoftRenewalDay(for: sub)
+            case .askMeFirst:
+                NotificationsManager.scheduleAskMeFirstReminder(for: sub)
+            case .oneTimeTrial:
+                break // Should not reach here due to guard above
+            }
+            
+            Task { try? await self.updateSubscription(sub) }
+        }
+    }
+
+    func declineRenewal(for subscriptionId: String) {
+        guard var sub = subscriptions.first(where: { $0.id == subscriptionId }) else { return }
+        
+        // Allow cancellation for any past due or pending subscription
+        // Mark as cancelled when user declines renewal
+        let today = Calendar.current.startOfDay(for: Date())
+        let due = Calendar.current.startOfDay(for: sub.renewalDate)
+        
+        // Only process if past due or pending
+        if today >= due || sub.status == .pendingDecision {
+            // Skip one-time trials - they should remain ended, not cancelled
+            if sub.renewalPreference != .oneTimeTrial {
+                sub.status = .canceled
+            }
+            NotificationsManager.cancelReminder(for: sub)
+            Task { try? await self.updateSubscription(sub) }
+        }
     }
     
     // MARK: - Budget Management

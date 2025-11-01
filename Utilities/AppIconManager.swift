@@ -25,10 +25,10 @@ class AppIconManager: ObservableObject {
             return
         }
         
-        // Always use the rawValue for alternate icons
-        let iconName = icon.rawValue
+        // Use the rawValue for alternate icons, or nil for the default icon
+        let iconName = icon == .blueprint ? nil : icon.rawValue
         
-        print("Setting app icon to: \(iconName)")
+        print("Setting app icon to: \(iconName ?? "blueprint (default)")")
         print("Current alternate icon before change: \(UIApplication.shared.alternateIconName ?? "none")")
         
         UIApplication.shared.setAlternateIconName(iconName) { error in
@@ -36,7 +36,7 @@ class AppIconManager: ObservableObject {
                 print("Failed to set app icon: \(error)")
                 print("Error details: \(error.localizedDescription)")
             } else {
-                print("Successfully set app icon to: \(iconName)")
+                print("Successfully set app icon to: \(iconName ?? "blueprint (default)")")
                 print("Current alternate icon after change: \(UIApplication.shared.alternateIconName ?? "none")")
                 
                 DispatchQueue.main.async {

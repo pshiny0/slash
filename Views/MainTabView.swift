@@ -153,27 +153,31 @@ struct MainTabView: View {
         // Force update all existing tab bars with multiple attempts
         DispatchQueue.main.async {
             // First attempt
-            UIApplication.shared.windows.forEach { window in
-                window.subviews.forEach { subview in
-                    if let tabBar = subview as? UITabBar {
-                        tabBar.standardAppearance = appearance
-                        tabBar.scrollEdgeAppearance = appearance
-                        tabBar.tintColor = selectedColor
-                        tabBar.unselectedItemTintColor = unselectedColor
-                        tabBar.backgroundColor = backgroundColor
-                        tabBar.isTranslucent = false
-                        tabBar.barTintColor = backgroundColor
-                        
-                        // Force update all tab bar items
-                        tabBar.items?.forEach { item in
-                            item.image = item.image?.withRenderingMode(.alwaysTemplate)
-                        }
-                        
-                        // Additional light theme enforcement
-                        if !self.themeManager.selectedTheme.name.contains("Dark") {
-                            tabBar.tintColor = UIColor.black
-                            tabBar.unselectedItemTintColor = UIColor.black
-                            print("🔧 Forced light theme colors on tab bar (first attempt)")
+            UIApplication.shared.connectedScenes.forEach { scene in
+                if let windowScene = scene as? UIWindowScene {
+                    windowScene.windows.forEach { window in
+                        window.subviews.forEach { subview in
+                            if let tabBar = subview as? UITabBar {
+                                tabBar.standardAppearance = appearance
+                                tabBar.scrollEdgeAppearance = appearance
+                                tabBar.tintColor = selectedColor
+                                tabBar.unselectedItemTintColor = unselectedColor
+                                tabBar.backgroundColor = backgroundColor
+                                tabBar.isTranslucent = false
+                                tabBar.barTintColor = backgroundColor
+                                
+                                // Force update all tab bar items
+                                tabBar.items?.forEach { item in
+                                    item.image = item.image?.withRenderingMode(.alwaysTemplate)
+                                }
+                                
+                                // Additional light theme enforcement
+                                if !self.themeManager.selectedTheme.name.contains("Dark") {
+                                    tabBar.tintColor = UIColor.black
+                                    tabBar.unselectedItemTintColor = UIColor.black
+                                    print("🔧 Forced light theme colors on tab bar (first attempt)")
+                                }
+                            }
                         }
                     }
                 }
@@ -181,27 +185,31 @@ struct MainTabView: View {
             
             // Second attempt after delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                UIApplication.shared.windows.forEach { window in
-                    window.subviews.forEach { subview in
-                        if let tabBar = subview as? UITabBar {
-                            tabBar.standardAppearance = appearance
-                            tabBar.scrollEdgeAppearance = appearance
-                            tabBar.tintColor = selectedColor
-                            tabBar.unselectedItemTintColor = unselectedColor
-                            tabBar.backgroundColor = backgroundColor
-                            tabBar.isTranslucent = false
-                            tabBar.barTintColor = backgroundColor
-                            
-                            // Force update all tab bar items
-                            tabBar.items?.forEach { item in
-                                item.image = item.image?.withRenderingMode(.alwaysTemplate)
-                            }
-                            
-                            // Additional light theme enforcement
-                            if !self.themeManager.selectedTheme.name.contains("Dark") {
-                                tabBar.tintColor = UIColor.black
-                                tabBar.unselectedItemTintColor = UIColor.black
-                                print("🔧 Forced light theme colors on tab bar (second attempt)")
+                UIApplication.shared.connectedScenes.forEach { scene in
+                    if let windowScene = scene as? UIWindowScene {
+                        windowScene.windows.forEach { window in
+                            window.subviews.forEach { subview in
+                                if let tabBar = subview as? UITabBar {
+                                    tabBar.standardAppearance = appearance
+                                    tabBar.scrollEdgeAppearance = appearance
+                                    tabBar.tintColor = selectedColor
+                                    tabBar.unselectedItemTintColor = unselectedColor
+                                    tabBar.backgroundColor = backgroundColor
+                                    tabBar.isTranslucent = false
+                                    tabBar.barTintColor = backgroundColor
+                                    
+                                    // Force update all tab bar items
+                                    tabBar.items?.forEach { item in
+                                        item.image = item.image?.withRenderingMode(.alwaysTemplate)
+                                    }
+                                    
+                                    // Additional light theme enforcement
+                                    if !self.themeManager.selectedTheme.name.contains("Dark") {
+                                        tabBar.tintColor = UIColor.black
+                                        tabBar.unselectedItemTintColor = UIColor.black
+                                        print("🔧 Forced light theme colors on tab bar (second attempt)")
+                                    }
+                                }
                             }
                         }
                     }
@@ -210,20 +218,24 @@ struct MainTabView: View {
             
             // Third attempt after longer delay to ensure persistence
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                UIApplication.shared.windows.forEach { window in
-                    window.subviews.forEach { subview in
-                        if let tabBar = subview as? UITabBar {
-                            tabBar.tintColor = selectedColor
-                            tabBar.unselectedItemTintColor = unselectedColor
-                            tabBar.backgroundColor = backgroundColor
-                            tabBar.isTranslucent = false
-                            tabBar.barTintColor = backgroundColor
-                            
-                            // Additional light theme enforcement
-                            if !self.themeManager.selectedTheme.name.contains("Dark") {
-                                tabBar.tintColor = UIColor.black
-                                tabBar.unselectedItemTintColor = UIColor.black
-                                print("🔧 Forced light theme colors on tab bar (third attempt)")
+                UIApplication.shared.connectedScenes.forEach { scene in
+                    if let windowScene = scene as? UIWindowScene {
+                        windowScene.windows.forEach { window in
+                            window.subviews.forEach { subview in
+                                if let tabBar = subview as? UITabBar {
+                                    tabBar.tintColor = selectedColor
+                                    tabBar.unselectedItemTintColor = unselectedColor
+                                    tabBar.backgroundColor = backgroundColor
+                                    tabBar.isTranslucent = false
+                                    tabBar.barTintColor = backgroundColor
+                                    
+                                    // Additional light theme enforcement
+                                    if !self.themeManager.selectedTheme.name.contains("Dark") {
+                                        tabBar.tintColor = UIColor.black
+                                        tabBar.unselectedItemTintColor = UIColor.black
+                                        print("🔧 Forced light theme colors on tab bar (third attempt)")
+                                    }
+                                }
                             }
                         }
                     }
@@ -250,25 +262,29 @@ struct MainTabView: View {
             }
             
             // Force update all tab bars
-            UIApplication.shared.windows.forEach { window in
-                window.subviews.forEach { subview in
-                    if let tabBar = subview as? UITabBar {
-                        tabBar.tintColor = selectedColor
-                        tabBar.unselectedItemTintColor = unselectedColor
-                        tabBar.backgroundColor = backgroundColor
-                        tabBar.isTranslucent = false
-                        tabBar.barTintColor = backgroundColor
-                        
-                        // Force update all tab bar items
-                        tabBar.items?.forEach { item in
-                            item.image = item.image?.withRenderingMode(.alwaysTemplate)
-                        }
-                        
-                        // Additional light theme enforcement
-                        if !self.themeManager.selectedTheme.name.contains("Dark") {
-                            tabBar.tintColor = UIColor.black
-                            tabBar.unselectedItemTintColor = UIColor.black
-                            print("🔧 Forced light theme colors in configureTabBarAppearance")
+            UIApplication.shared.connectedScenes.forEach { scene in
+                if let windowScene = scene as? UIWindowScene {
+                    windowScene.windows.forEach { window in
+                        window.subviews.forEach { subview in
+                            if let tabBar = subview as? UITabBar {
+                                tabBar.tintColor = selectedColor
+                                tabBar.unselectedItemTintColor = unselectedColor
+                                tabBar.backgroundColor = backgroundColor
+                                tabBar.isTranslucent = false
+                                tabBar.barTintColor = backgroundColor
+                                
+                                // Force update all tab bar items
+                                tabBar.items?.forEach { item in
+                                    item.image = item.image?.withRenderingMode(.alwaysTemplate)
+                                }
+                                
+                                // Additional light theme enforcement
+                                if !self.themeManager.selectedTheme.name.contains("Dark") {
+                                    tabBar.tintColor = UIColor.black
+                                    tabBar.unselectedItemTintColor = UIColor.black
+                                    print("🔧 Forced light theme colors in configureTabBarAppearance")
+                                }
+                            }
                         }
                     }
                 }
@@ -287,21 +303,25 @@ struct MainTabView: View {
         
         // Force update all existing tab bars
         DispatchQueue.main.async {
-            UIApplication.shared.windows.forEach { window in
-                window.subviews.forEach { subview in
-                    if let tabBar = subview as? UITabBar {
-                        tabBar.tintColor = UIColor.black
-                        tabBar.unselectedItemTintColor = UIColor.black
-                        tabBar.backgroundColor = UIColor.white
-                        tabBar.barTintColor = UIColor.white
-                        tabBar.isTranslucent = false
-                        
-                        // Force all items to use template rendering
-                        tabBar.items?.forEach { item in
-                            item.image = item.image?.withRenderingMode(.alwaysTemplate)
+            UIApplication.shared.connectedScenes.forEach { scene in
+                if let windowScene = scene as? UIWindowScene {
+                    windowScene.windows.forEach { window in
+                        window.subviews.forEach { subview in
+                            if let tabBar = subview as? UITabBar {
+                                tabBar.tintColor = UIColor.black
+                                tabBar.unselectedItemTintColor = UIColor.black
+                                tabBar.backgroundColor = UIColor.white
+                                tabBar.barTintColor = UIColor.white
+                                tabBar.isTranslucent = false
+                                
+                                // Force all items to use template rendering
+                                tabBar.items?.forEach { item in
+                                    item.image = item.image?.withRenderingMode(.alwaysTemplate)
+                                }
+                                
+                                print("🔧 Applied aggressive light theme colors to tab bar")
+                            }
                         }
-                        
-                        print("🔧 Applied aggressive light theme colors to tab bar")
                     }
                 }
             }

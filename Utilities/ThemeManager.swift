@@ -64,6 +64,10 @@ struct AppTheme: Identifiable, Codable, Equatable {
         self.errorHex = errorHex
     }
     
+    enum CodingKeys: String, CodingKey {
+        case name, primaryHex, accentHex, secondaryHex, cardHex, textPrimaryHex, textSecondaryHex, successHex, warningHex, errorHex
+    }
+    
     static let themes: [AppTheme] = [
         // Light
         AppTheme(

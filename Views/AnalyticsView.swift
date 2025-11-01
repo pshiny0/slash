@@ -56,8 +56,8 @@ struct AnalyticsView: View {
                             GridItem(.flexible())
                         ], spacing: 16) {
                             ModernStatCard(
-                                title: "Total Subscriptions",
-                                value: "\(dataManager.subscriptions.count)",
+                                title: "Active Subscriptions",
+                                value: "\(activeSubscriptions.count)",
                                 icon: "rectangle.stack.fill",
                                 color: themeManager.selectedTheme.accent,
                                 trend: nil
@@ -207,7 +207,7 @@ struct AnalyticsView: View {
     }
     
     private var totalMonthlyCost: Double {
-        dataManager.subscriptions.reduce(into: 0.0) { total, subscription in
+        activeSubscriptions.reduce(into: 0.0) { total, subscription in
             total += subscription.price
         }
     }
@@ -239,7 +239,7 @@ struct AnalyticsView: View {
     }
     
     private var categoryBreakdown: [CategoryAnalytics] {
-        let grouped = Dictionary(grouping: dataManager.subscriptions) { $0.category }
+        let grouped = Dictionary(grouping: activeSubscriptions) { $0.category }
         let total = totalCost
         
         return grouped.map { category, subs in
@@ -252,6 +252,10 @@ struct AnalyticsView: View {
                 percentage: total > 0 ? (categoryTotal / total) * 100 : 0
             )
         }.sorted { $0.totalCost > $1.totalCost }
+    }
+
+    private var activeSubscriptions: [Subscription] {
+        dataManager.subscriptions.filter { $0.status == .active }
     }
     
     private var recentActivity: [ActivityItem] {

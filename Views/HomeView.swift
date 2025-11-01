@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @EnvironmentObject private var dataManager: DataManager
@@ -8,6 +9,8 @@ struct HomeView: View {
     @State private var filterCategory: SubscriptionCategory? = nil
     @State private var showFilterMenu: Bool = false
     @State private var viewportHeight: CGFloat = 0
+    @AppStorage("needsAttentionExpanded") private var needsAttentionExpanded: Bool = false
+    @AppStorage("inactiveExpanded") private var inactiveExpanded: Bool = false
 
     private var upcomingRenewals: [Subscription] {
         dataManager.subscriptions.filter { sub in
@@ -15,12 +18,28 @@ struct HomeView: View {
         }.sorted { $0.daysUntilRenewal < $1.daysUntilRenewal }
     }
     
-    private var allSubscriptions: [Subscription] {
+    private var filteredSubscriptions: [Subscription] {
         dataManager.subscriptions.filter { sub in
             let matchesSearch = searchText.isEmpty || sub.name.localizedCaseInsensitiveContains(searchText)
             let matchesCat = filterCategory == nil || sub.category == filterCategory
             return matchesSearch && matchesCat
-        }.sorted { $0.renewalDate < $1.renewalDate }
+        }
+    }
+    
+    // Group subscriptions by status
+    private var activeSubscriptions: [Subscription] {
+        filteredSubscriptions.filter { $0.status == .active }
+            .sorted { $0.renewalDate < $1.renewalDate }
+    }
+    
+    private var pendingSubscriptions: [Subscription] {
+        filteredSubscriptions.filter { $0.status == .pendingDecision }
+            .sorted { $0.renewalDate < $1.renewalDate }
+    }
+    
+    private var inactiveSubscriptions: [Subscription] {
+        filteredSubscriptions.filter { $0.status.isInactive }
+            .sorted { $0.renewalDate < $1.renewalDate }
     }
 
 
@@ -156,7 +175,7 @@ struct HomeView: View {
                             }
                             .padding(.horizontal)
                             
-                            if allSubscriptions.isEmpty {
+                            if filteredSubscriptions.isEmpty {
                                 // Empty State
                                 ModernCard {
                                     VStack(spacing: 20) {
@@ -186,41 +205,31 @@ struct HomeView: View {
                                 .padding(.horizontal)
                             } else {
                                 LazyVStack(spacing: 12) {
-                                    ForEach(allSubscriptions) { subscription in
-                                        NavigationLink(value: subscription.id) {
-                                            AllSubscriptionsRow(subscription: subscription)
+                                    // Active Subscriptions (no grouping header)
+                                    ForEach(activeSubscriptions) { subscription in
+                                        SubscriptionRowCard(subscription: subscription)
+                                    }
+                                    
+                                    // Needs Attention Section (Collapsible)
+                                    if !pendingSubscriptions.isEmpty {
+                                        CollapsibleSection(
+                                            title: "Needs Attention (\(pendingSubscriptions.count))",
+                                            isExpanded: $needsAttentionExpanded
+                                        ) {
+                                            ForEach(pendingSubscriptions) { subscription in
+                                                SubscriptionRowCard(subscription: subscription, isPending: true)
+                                            }
                                         }
-                                        .buttonStyle(PlainButtonStyle())
-                                        .swipeActions(edge: .trailing) {
-                                            Button(role: .destructive) {
-                                                Task {
-                                                    do {
-                                                        try await dataManager.deleteSubscription(subscription)
-                                                        print("Successfully deleted subscription: \(subscription.name)")
-                                                    } catch {
-                                                        print("Error deleting subscription: \(error)")
-                                                    }
-                                                }
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
-                                            
-                                            Button {
-                                                // TODO: Implement edit functionality
-                                            } label: {
-                                                Label("Edit", systemImage: "pencil")
-                                            }
-                                            
-                                            Button {
-                                                // TODO: Implement share functionality
-                                            } label: {
-                                                Label("Share", systemImage: "square.and.arrow.up")
-                                            }
-                                            
-                                            Button {
-                                                // TODO: Implement reminder adjustment
-                                            } label: {
-                                                Label("Reminder", systemImage: "bell")
+                                    }
+                                    
+                                    // Inactive Section (Collapsible)
+                                    if !inactiveSubscriptions.isEmpty {
+                                        CollapsibleSection(
+                                            title: "Inactive (\(inactiveSubscriptions.count))",
+                                            isExpanded: $inactiveExpanded
+                                        ) {
+                                            ForEach(inactiveSubscriptions) { subscription in
+                                                SubscriptionRowCard(subscription: subscription)
                                             }
                                         }
                                     }
@@ -397,8 +406,6 @@ struct ModernSubscriptionCard: View {
             return "wrench.and.screwdriver.fill"
         case .health:
             return "heart.fill"
-        case .productivity:
-            return "briefcase.fill"
         case .other:
             return "creditcard.fill"
         }
@@ -486,8 +493,6 @@ struct CompactSubscriptionCard: View {
             return "wrench.and.screwdriver.fill"
         case .health:
             return "heart.fill"
-        case .productivity:
-            return "briefcase.fill"
         case .other:
             return "creditcard.fill"
         }
@@ -589,21 +594,68 @@ struct UpcomingRenewalCard: View {
     }
 }
 
-struct AllSubscriptionsRow: View {
+// MARK: - Subscription Row Card (Minimal Design)
+struct SubscriptionRowCard: View {
     let subscription: Subscription
+    var isPending: Bool = false
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var dataManager: DataManager
+    @State private var showReminderModal = false
+    
+    private var isPastDue: Bool {
+        subscription.daysUntilRenewal < 0
+    }
     
     var body: some View {
+        Group {
+            if subscription.status == .pendingDecision || (subscription.status == .active && isPastDue) {
+                // For pending or past due subscriptions, show modal on tap instead of navigation
+                Button(action: {
+                    showReminderModal = true
+                    // Haptic feedback
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                    impactFeedback.impactOccurred()
+                }) {
+                    cardContent
+                }
+                .sheet(isPresented: $showReminderModal) {
+                    PendingReminderModal(subscription: subscription)
+                }
+            } else {
+                // For other subscriptions, allow navigation
+                NavigationLink(value: subscription.id) {
+                    cardContent
+                }
+            }
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                Task {
+                    do {
+                        try await dataManager.deleteSubscription(subscription)
+                        print("Successfully deleted subscription: \(subscription.name)")
+                    } catch {
+                        print("Error deleting subscription: \(error)")
+                    }
+                }
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+    
+    private var cardContent: some View {
         HStack(spacing: 16) {
-            // App Icon/Logo
+            // Service Icon
             ZStack {
                 Circle()
-                    .fill(themeManager.selectedTheme.accent.opacity(0.1))
+                    .fill(iconBackgroundColor.opacity(0.1))
                     .frame(width: 50, height: 50)
                 
                 Image(systemName: serviceIcon)
                     .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(themeManager.selectedTheme.accent)
+                    .foregroundColor(iconForegroundColor)
+                    .opacity(subscription.status.isInactive ? 0.6 : 1.0)
             }
             
             // Subscription Details
@@ -613,6 +665,7 @@ struct AllSubscriptionsRow: View {
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(themeManager.selectedTheme.textPrimary)
+                        .opacity(cardOpacity)
                     
                     Spacer()
                     
@@ -623,30 +676,25 @@ struct AllSubscriptionsRow: View {
                     }
                 }
                 
-                HStack(spacing: 12) {
-                    // Billing Cycle
-                    Text(subscription.billingCycle.displayName)
+                HStack(spacing: 8) {
+                    // Next Billing Date
+                    Text(nextBillingDateText)
                         .font(.caption)
-                        .foregroundColor(themeManager.selectedTheme.accent)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(themeManager.selectedTheme.accent.opacity(0.1))
-                        .cornerRadius(8)
+                        .foregroundColor(themeManager.selectedTheme.textSecondary)
+                        .opacity(cardOpacity)
                     
-                    // Status Badge
-                    Text(subscription.status.rawValue.capitalized)
-                        .font(.caption)
-                        .foregroundColor(statusColor)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(statusColor.opacity(0.1))
-                        .cornerRadius(8)
+                    // Status Tag (shown for non-active or past due subscriptions)
+                    if let statusLabel = effectiveStatusLabel {
+                        Text(statusLabel)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(effectiveStatusTagColor)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(effectiveStatusTagBackgroundColor)
+                            .cornerRadius(6)
+                    }
                 }
-                
-                // Renewal Date
-                Text("Renews \(renewalDateText)")
-                    .font(.caption)
-                    .foregroundColor(themeManager.selectedTheme.textSecondary)
             }
             
             Spacer()
@@ -657,15 +705,16 @@ struct AllSubscriptionsRow: View {
                     .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(themeManager.selectedTheme.textPrimary)
-                
-                Text(subscription.billingCycle.rawValue)
-                    .font(.caption2)
-                    .foregroundColor(themeManager.selectedTheme.textSecondary)
+                    .opacity(cardOpacity)
             }
         }
         .padding()
         .background(themeManager.selectedTheme.cardBackground)
         .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(borderColor, lineWidth: (isPending || isPastDue) ? 1 : 0)
+        )
         .shadow(
             color: themeManager.selectedTheme.textPrimary.opacity(0.05),
             radius: 8,
@@ -684,18 +733,116 @@ struct AllSubscriptionsRow: View {
         }
     }
     
-    private var statusColor: Color {
-        switch subscription.status {
-        case .active: return themeManager.selectedTheme.success
-        case .canceled: return themeManager.selectedTheme.error
-        case .paused: return themeManager.selectedTheme.warning
+    private var nextBillingDateText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        if subscription.status == .ended || subscription.status == .canceled {
+            return formatter.string(from: subscription.renewalDate)
+        } else if subscription.daysUntilRenewal < 0 {
+            return "Past due"
+        } else {
+            return "Next: \(formatter.string(from: subscription.renewalDate))"
         }
     }
     
-    private var renewalDateText: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        return formatter.string(from: subscription.renewalDate)
+    // Visual hierarchy styling
+    private var cardOpacity: Double {
+        switch subscription.status {
+        case .canceled:
+            return 0.6
+        case .ended:
+            return 0.5
+        default:
+            return 1.0
+        }
+    }
+    
+    private var iconBackgroundColor: Color {
+        // Show yellow accent for pending or past due subscriptions
+        if subscription.status == .pendingDecision || (subscription.status == .active && subscription.daysUntilRenewal < 0) {
+            return themeManager.selectedTheme.warning
+        }
+        return themeManager.selectedTheme.accent
+    }
+    
+    private var iconForegroundColor: Color {
+        // Show yellow accent for pending or past due subscriptions
+        if subscription.status == .pendingDecision || (subscription.status == .active && subscription.daysUntilRenewal < 0) {
+            return themeManager.selectedTheme.warning
+        }
+        return themeManager.selectedTheme.accent
+    }
+    
+    // Effective status label considering both status and renewal date
+    private var effectiveStatusLabel: String? {
+        // First check explicit status labels
+        if let label = subscription.status.displayLabel {
+            return label
+        }
+        
+        // If active but renewal date is in the past, show "Needs Update"
+        if subscription.status == .active && subscription.daysUntilRenewal < 0 {
+            return "Needs Update"
+        }
+        
+        // If paused and renewal date is in the past, show "Expired"
+        if subscription.status == .paused && subscription.daysUntilRenewal < 0 {
+            return "Expired"
+        }
+        
+        return nil
+    }
+    
+    private var effectiveStatusTagColor: Color {
+        // Check if renewal date is past
+        let isPastDue = subscription.daysUntilRenewal < 0
+        
+        switch subscription.status {
+        case .pendingDecision:
+            return themeManager.selectedTheme.warning // Yellow accent
+        case .active:
+            if isPastDue {
+                return themeManager.selectedTheme.warning // Yellow accent for past due
+            }
+            return themeManager.selectedTheme.textPrimary
+        case .ended:
+            return themeManager.selectedTheme.textSecondary // Gray tint
+        case .canceled:
+            return themeManager.selectedTheme.textSecondary // Dimmed
+        case .paused:
+            if isPastDue {
+                return themeManager.selectedTheme.textSecondary // Gray tint for expired
+            }
+            return themeManager.selectedTheme.textSecondary
+        }
+    }
+    
+    private var effectiveStatusTagBackgroundColor: Color {
+        // Check if renewal date is past
+        let isPastDue = subscription.daysUntilRenewal < 0
+        
+        switch subscription.status {
+        case .pendingDecision:
+            return themeManager.selectedTheme.warning.opacity(0.15) // Yellow accent
+        case .active:
+            if isPastDue {
+                return themeManager.selectedTheme.warning.opacity(0.15) // Yellow accent for past due
+            }
+            return Color.clear
+        case .ended:
+            return themeManager.selectedTheme.textSecondary.opacity(0.1) // Gray tint
+        case .canceled:
+            return themeManager.selectedTheme.textSecondary.opacity(0.1) // Dimmed
+        case .paused:
+            if isPastDue {
+                return themeManager.selectedTheme.textSecondary.opacity(0.1) // Gray tint for expired
+            }
+            return Color.clear
+        }
+    }
+    
+    private var borderColor: Color {
+        themeManager.selectedTheme.warning.opacity(0.3)
     }
 }
 
@@ -721,6 +868,130 @@ struct QuickStatView: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(themeManager.selectedTheme.textPrimary)
+            }
+        }
+    }
+}
+
+// MARK: - Collapsible Section
+struct CollapsibleSection<Content: View>: View {
+    let title: String
+    @Binding var isExpanded: Bool
+    let content: Content
+    @EnvironmentObject private var themeManager: ThemeManager
+    
+    init(title: String, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self._isExpanded = isExpanded
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(themeManager.selectedTheme.textPrimary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                        .foregroundColor(themeManager.selectedTheme.textSecondary)
+                }
+                .padding(.horizontal)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            if isExpanded {
+                content
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
+        }
+    }
+}
+
+// MARK: - Pending Reminder Modal
+struct PendingReminderModal: View {
+    let subscription: Subscription
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var dataManager: DataManager
+    @EnvironmentObject private var themeManager: ThemeManager
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                GradientBackground()
+                    .environmentObject(themeManager)
+                
+                VStack(spacing: 24) {
+                    Spacer()
+                    
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(themeManager.selectedTheme.warning.opacity(0.1))
+                            .frame(width: 80, height: 80)
+                        
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(themeManager.selectedTheme.warning)
+                    }
+                    
+                    // Question
+                    VStack(spacing: 8) {
+                        Text("Did this renew?")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(themeManager.selectedTheme.textPrimary)
+                        
+                        Text(subscription.name)
+                            .font(.headline)
+                            .foregroundColor(themeManager.selectedTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    Spacer()
+                    
+                    // Action Buttons
+                    VStack(spacing: 12) {
+                        ModernButton(
+                            title: "Yes, Renewed",
+                            action: {
+                                dataManager.confirmRenewal(for: subscription.id)
+                                dismiss()
+                            },
+                            style: .primary
+                        )
+                        
+                        ModernButton(
+                            title: "No, Cancelled",
+                            action: {
+                                dataManager.declineRenewal(for: subscription.id)
+                                dismiss()
+                            },
+                            style: .secondary
+                        )
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.vertical, 40)
+            }
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Later") {
+                        dismiss()
+                    }
+                    .foregroundColor(themeManager.selectedTheme.textSecondary)
+                }
             }
         }
     }

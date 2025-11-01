@@ -20,10 +20,59 @@ enum SubscriptionCategory: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum RenewalPreference: String, Codable, CaseIterable, Identifiable, Hashable {
+    case autoRenew
+    case askMeFirst
+    case oneTimeTrial
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .autoRenew: return "Auto Renew"
+        case .askMeFirst: return "Ask Me First"
+        case .oneTimeTrial: return "One Time / Trial"
+        }
+    }
+}
+
 enum SubscriptionStatus: String, Codable, CaseIterable {
     case active
     case canceled
     case paused
+    case pendingDecision
+    case ended
+    
+    // Display label for status (only for non-active statuses)
+    var displayLabel: String? {
+        switch self {
+        case .active:
+            return nil // No label for active subscriptions
+        case .pendingDecision:
+            return "Needs Update"
+        case .ended:
+            return "Expired"
+        case .canceled:
+            return "Cancelled"
+        case .paused:
+            return nil // Paused subscriptions can be treated as inactive
+        }
+    }
+    
+    // Check if status is considered inactive
+    var isInactive: Bool {
+        switch self {
+        case .ended, .canceled, .paused:
+            return true
+        case .active, .pendingDecision:
+            return false
+        }
+    }
+    
+    // Check if status needs attention (pending confirmation)
+    var needsAttention: Bool {
+        return self == .pendingDecision
+    }
 }
 
 enum BillingCycle: String, Codable, CaseIterable, Identifiable {
@@ -78,9 +127,11 @@ struct Subscription: Identifiable, Codable, Equatable {
     var sharedWith: [String]
     var status: SubscriptionStatus
     var billingCycle: BillingCycle
+    var renewalPreference: RenewalPreference
+    var reminderDaysBefore: Int?
     
     // Custom initializer to handle backward compatibility
-    init(id: String, name: String, price: Double, renewalDate: Date, startDate: Date, category: SubscriptionCategory, notes: String? = nil, ownerId: String, cancelLink: URL? = nil, cancelScheme: URL? = nil, sharedWith: [String] = [], status: SubscriptionStatus = .active, billingCycle: BillingCycle = .monthly) {
+    init(id: String, name: String, price: Double, renewalDate: Date, startDate: Date, category: SubscriptionCategory, notes: String? = nil, ownerId: String, cancelLink: URL? = nil, cancelScheme: URL? = nil, sharedWith: [String] = [], status: SubscriptionStatus = .active, billingCycle: BillingCycle = .monthly, renewalPreference: RenewalPreference = .autoRenew, reminderDaysBefore: Int? = nil) {
         self.id = id
         self.name = name
         self.price = price
@@ -94,6 +145,8 @@ struct Subscription: Identifiable, Codable, Equatable {
         self.sharedWith = sharedWith
         self.status = status
         self.billingCycle = billingCycle
+        self.renewalPreference = renewalPreference
+        self.reminderDaysBefore = reminderDaysBefore
     }
     
     // Custom decoder to handle missing fields
@@ -115,6 +168,8 @@ struct Subscription: Identifiable, Codable, Equatable {
         startDate = try container.decodeIfPresent(Date.self, forKey: .startDate) ?? renewalDate
         status = try container.decodeIfPresent(SubscriptionStatus.self, forKey: .status) ?? .active
         billingCycle = try container.decodeIfPresent(BillingCycle.self, forKey: .billingCycle) ?? .monthly
+        renewalPreference = try container.decodeIfPresent(RenewalPreference.self, forKey: .renewalPreference) ?? .autoRenew
+        reminderDaysBefore = try container.decodeIfPresent(Int.self, forKey: .reminderDaysBefore)
     }
 
     var daysUntilRenewal: Int {

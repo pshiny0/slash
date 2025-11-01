@@ -1,69 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
-
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Slash</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
-
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-
-	<key>CFBundleName</key>
-	<string>Slash</string>
-
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-
-	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
-
-	<key>CFBundleVersion</key>
-	<string>1</string>
-
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
-	</dict>
-
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-
-	<key>UIMainStoryboardFile</key>
-	<string></string>
-	<key>UIAppFonts</key>
-	<array>
-		<string>TANTangkiwood-Display.ttf</string>
-	</array>
-
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
-
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-
-	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleLightContent</string>
-
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<true/>
-
 	<key>CFBundleIcons</key>
 	<dict>
 		<key>CFBundlePrimaryIcon</key>
@@ -72,20 +16,9 @@
 			<array>
 				<string>AppIcon</string>
 			</array>
-			<key>UIPrerenderedIcon</key>
-			<false/>
 		</dict>
-
 		<key>CFBundleAlternateIcons</key>
 		<dict>
-			<key>blueprint</key>
-			<dict>
-				<key>CFBundleIconFiles</key>
-				<array>
-					<string>AppIcon-blueprint</string>
-				</array>
-			</dict>
-
 			<key>blueprint-echo</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -93,7 +26,6 @@
 					<string>AppIcon-blueprint-echo</string>
 				</array>
 			</dict>
-
 			<key>graphite</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -101,7 +33,6 @@
 					<string>AppIcon-graphite</string>
 				</array>
 			</dict>
-
 			<key>graphite-echo</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -109,7 +40,6 @@
 					<string>AppIcon-graphite-echo</string>
 				</array>
 			</dict>
-
 			<key>lumen-black</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -117,7 +47,6 @@
 					<string>AppIcon-lumen-black</string>
 				</array>
 			</dict>
-
 			<key>lumen-blue</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -125,7 +54,6 @@
 					<string>AppIcon-lumen-blue</string>
 				</array>
 			</dict>
-
 			<key>studio-black</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -133,7 +61,6 @@
 					<string>AppIcon-studio-black</string>
 				</array>
 			</dict>
-
 			<key>studio-blue</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -141,7 +68,6 @@
 					<string>AppIcon-studio-blue</string>
 				</array>
 			</dict>
-
 			<key>wireframe-black</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -149,7 +75,6 @@
 					<string>AppIcon-wireframe-black</string>
 				</array>
 			</dict>
-
 			<key>wireframe-blue</key>
 			<dict>
 				<key>CFBundleIconFiles</key>
@@ -159,5 +84,58 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Slash</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>GoogleSignIn</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.92131788097-papp0nbv79pfdol69tlrgc82kvo6h2jr</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Scheduling renewal reminders</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Optional export (future)</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Optional analytics (future)</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>TANTangkiwood-Display.ttf</string>
+	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIUserInterfaceStyle</key>
+	<string>Automatic</string>
 </dict>
 </plist>

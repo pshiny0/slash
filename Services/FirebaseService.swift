@@ -17,7 +17,7 @@ final class FirebaseService {
         
         // Enable Firestore offline persistence
         let settings = FirestoreSettings()
-        settings.isPersistenceEnabled = true
+        settings.cacheSettings = PersistentCacheSettings()
         db.settings = settings
         
         // Listen to auth state changes
@@ -41,7 +41,7 @@ final class FirebaseService {
 
     // MARK: - Auth
     func signInWithEmail(email: String, password: String) async throws {
-        let result = try await Auth.auth().signIn(withEmail: email, password: password)
+        _ = try await Auth.auth().signIn(withEmail: email, password: password)
         // Auth state listener will handle updating the subject
     }
 
@@ -61,7 +61,16 @@ final class FirebaseService {
         return try await withCheckedThrowingContinuation { continuation in
             Task { @MainActor in
                 do {
-                    guard let presentingViewController = UIApplication.shared.windows.first?.rootViewController else {
+                    var presentingViewController: UIViewController?
+                    for scene in UIApplication.shared.connectedScenes {
+                        if let windowScene = scene as? UIWindowScene,
+                           let window = windowScene.windows.first {
+                            presentingViewController = window.rootViewController
+                            break
+                        }
+                    }
+                    
+                    guard let presentingViewController = presentingViewController else {
                         continuation.resume(throwing: NSError(domain: "FirebaseService", code: 1, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller"]))
                         return
                     }
@@ -98,7 +107,7 @@ final class FirebaseService {
                         let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
                         
                         // Sign in to Firebase with the Google credential
-                        let authResult = try await Auth.auth().signIn(with: credential)
+                        _ = try await Auth.auth().signIn(with: credential)
                         continuation.resume()
                     } catch {
                         print("Google Sign-In failed with error: \(error)")
@@ -274,7 +283,7 @@ final class FirebaseService {
             }
             
             // Try to find and delete the document with matching ID
-            if let targetDoc = snapshot.documents.first(where: { $0.documentID == id }) {
+            if snapshot.documents.contains(where: { $0.documentID == id }) {
                 print("Found matching document, attempting delete...")
                 try await db.collection("subscriptions").document(id).delete()
                 print("Successfully deleted subscription \(id)")
@@ -296,11 +305,11 @@ final class FirebaseService {
     // MARK: - Helper Functions
     private func getAuthProvider(from user: FirebaseAuth.User) -> AuthProvider {
         // Check if user signed in with Google
-        if let providerData = user.providerData.first(where: { $0.providerID == "google.com" }) {
+        if user.providerData.contains(where: { $0.providerID == "google.com" }) {
             return .google
         }
         // Check if user signed in with Apple
-        else if let providerData = user.providerData.first(where: { $0.providerID == "apple.com" }) {
+        else if user.providerData.contains(where: { $0.providerID == "apple.com" }) {
             return .apple
         }
         // Default to email/password

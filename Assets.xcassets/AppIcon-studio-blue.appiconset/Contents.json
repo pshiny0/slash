@@ -1,16 +1,26 @@
 {
-  "images" : [
+  "images": [
     {
-      "filename" : "AppIcon-studio-blue.png",
-      "idiom" : "universal",
-      "scale" : "1x"
+      "filename": "AppIcon-studio-blue@2x.png",
+      "idiom": "iphone",
+      "scale": "2x",
+      "size": "60x60"
+    },
+    {
+      "filename": "AppIcon-studio-blue@3x.png",
+      "idiom": "iphone",
+      "scale": "3x",
+      "size": "60x60"
+    },
+    {
+      "filename": "AppIcon-studio-blue-marketing.png",
+      "idiom": "ios-marketing",
+      "scale": "1x",
+      "size": "1024x1024"
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
-  },
-  "properties" : {
-    "preserves-vector-representation" : true
+  "info": {
+    "author": "xcode",
+    "version": 1
   }
 }

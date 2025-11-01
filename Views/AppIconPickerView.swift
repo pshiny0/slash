@@ -65,7 +65,7 @@ struct AppIconCard: View {
         VStack(spacing: 8) {
             // Icon Preview
             ZStack {
-                if let uiImage = UIImage(named: "AppIcon-\(icon.rawValue)") {
+                if let uiImage = UIImage(named: "AppIcon-\(icon.rawValue)-preview") {
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)

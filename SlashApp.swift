@@ -142,32 +142,40 @@ struct RootView: View {
         // Force update all existing tab bars with multiple attempts
         DispatchQueue.main.async {
             // First attempt - immediate
-            UIApplication.shared.windows.forEach { window in
-                window.subviews.forEach { subview in
-                    if let tabBar = subview as? UITabBar {
-                        tabBar.standardAppearance = tabBarAppearance
-                        tabBar.scrollEdgeAppearance = tabBarAppearance
-                        tabBar.tintColor = selectedColor
-                        tabBar.unselectedItemTintColor = unselectedColor
-                        tabBar.backgroundColor = backgroundColor
-                        tabBar.isTranslucent = false
-                        tabBar.barTintColor = backgroundColor
+            UIApplication.shared.connectedScenes.forEach { scene in
+                if let windowScene = scene as? UIWindowScene {
+                    windowScene.windows.forEach { window in
+                        window.subviews.forEach { subview in
+                            if let tabBar = subview as? UITabBar {
+                                tabBar.standardAppearance = tabBarAppearance
+                                tabBar.scrollEdgeAppearance = tabBarAppearance
+                                tabBar.tintColor = selectedColor
+                                tabBar.unselectedItemTintColor = unselectedColor
+                                tabBar.backgroundColor = backgroundColor
+                                tabBar.isTranslucent = false
+                                tabBar.barTintColor = backgroundColor
+                            }
+                        }
                     }
                 }
             }
             
             // Second attempt - after delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                UIApplication.shared.windows.forEach { window in
-                    window.subviews.forEach { subview in
-                        if let tabBar = subview as? UITabBar {
-                            tabBar.standardAppearance = tabBarAppearance
-                            tabBar.scrollEdgeAppearance = tabBarAppearance
-                            tabBar.tintColor = selectedColor
-                            tabBar.unselectedItemTintColor = unselectedColor
-                            tabBar.backgroundColor = backgroundColor
-                            tabBar.isTranslucent = false
-                            tabBar.barTintColor = backgroundColor
+                UIApplication.shared.connectedScenes.forEach { scene in
+                    if let windowScene = scene as? UIWindowScene {
+                        windowScene.windows.forEach { window in
+                            window.subviews.forEach { subview in
+                                if let tabBar = subview as? UITabBar {
+                                    tabBar.standardAppearance = tabBarAppearance
+                                    tabBar.scrollEdgeAppearance = tabBarAppearance
+                                    tabBar.tintColor = selectedColor
+                                    tabBar.unselectedItemTintColor = unselectedColor
+                                    tabBar.backgroundColor = backgroundColor
+                                    tabBar.isTranslucent = false
+                                    tabBar.barTintColor = backgroundColor
+                                }
+                            }
                         }
                     }
                 }
@@ -175,16 +183,20 @@ struct RootView: View {
             
             // Third attempt - after longer delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                UIApplication.shared.windows.forEach { window in
-                    window.subviews.forEach { subview in
-                        if let tabBar = subview as? UITabBar {
-                            tabBar.standardAppearance = tabBarAppearance
-                            tabBar.scrollEdgeAppearance = tabBarAppearance
-                            tabBar.tintColor = selectedColor
-                            tabBar.unselectedItemTintColor = unselectedColor
-                            tabBar.backgroundColor = backgroundColor
-                            tabBar.isTranslucent = false
-                            tabBar.barTintColor = backgroundColor
+                UIApplication.shared.connectedScenes.forEach { scene in
+                    if let windowScene = scene as? UIWindowScene {
+                        windowScene.windows.forEach { window in
+                            window.subviews.forEach { subview in
+                                if let tabBar = subview as? UITabBar {
+                                    tabBar.standardAppearance = tabBarAppearance
+                                    tabBar.scrollEdgeAppearance = tabBarAppearance
+                                    tabBar.tintColor = selectedColor
+                                    tabBar.unselectedItemTintColor = unselectedColor
+                                    tabBar.backgroundColor = backgroundColor
+                                    tabBar.isTranslucent = false
+                                    tabBar.barTintColor = backgroundColor
+                                }
+                            }
                         }
                     }
                 }

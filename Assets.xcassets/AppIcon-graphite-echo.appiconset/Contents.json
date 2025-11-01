@@ -1,16 +1,26 @@
 {
-  "images" : [
+  "images": [
     {
-      "filename" : "AppIcon-graphite-echo.png",
-      "idiom" : "universal",
-      "scale" : "1x"
+      "filename": "AppIcon-graphite-echo@2x.png",
+      "idiom": "iphone",
+      "scale": "2x",
+      "size": "60x60"
+    },
+    {
+      "filename": "AppIcon-graphite-echo@3x.png",
+      "idiom": "iphone",
+      "scale": "3x",
+      "size": "60x60"
+    },
+    {
+      "filename": "AppIcon-graphite-echo-marketing.png",
+      "idiom": "ios-marketing",
+      "scale": "1x",
+      "size": "1024x1024"
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
-  },
-  "properties" : {
-    "preserves-vector-representation" : true
+  "info": {
+    "author": "xcode",
+    "version": 1
   }
 }

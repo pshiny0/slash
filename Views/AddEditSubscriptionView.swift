@@ -13,6 +13,7 @@ struct AddEditSubscriptionView: View {
     @State private var startDate: Date = Date()
     @State private var category: SubscriptionCategory = .other
     @State private var billingCycle: BillingCycle = .monthly
+    @State private var renewalPreference: RenewalPreference = .autoRenew
     @State private var notes: String = ""
     @State private var shareEmails: String = ""
     @State private var cancelLink: URL? = nil
@@ -23,6 +24,10 @@ struct AddEditSubscriptionView: View {
     @State private var validationErrors: Set<String> = []
     @State private var validationTrigger: Int = 0
     @State private var showValidationErrors: Bool = false
+    @Namespace private var renewalPreferenceNamespace
+    private let fieldHeight: CGFloat = 44
+    @State private var reminderDaysBefore: Int? = 3
+    @State private var remindMeEnabled: Bool = true
 
     var body: some View {
         NavigationStack {
@@ -55,19 +60,10 @@ struct AddEditSubscriptionView: View {
                         // Subscription Details Card
                         ModernCard {
                             VStack(spacing: 24) {
-                                HStack {
-                                    Text("Add Subscription")
-                                        .font(.title2)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(themeManager.selectedTheme.textPrimary)
-                                    
-                                    Spacer()
-                                }
-                                
                                 VStack(spacing: 20) {
                                     // Subscription Name
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("Subscription Name *")
+                                        Text("Subscription Name")
                                             .font(.subheadline)
                                             .fontWeight(.semibold)
                                             .foregroundColor(showValidationErrors && validationErrors.contains("name") ? .red : themeManager.selectedTheme.textPrimary)
@@ -77,6 +73,7 @@ struct AddEditSubscriptionView: View {
                                             placeholder: "Netflix, Spotify, Notion",
                                             text: $name
                                         )
+                                        .frame(height: fieldHeight)
                                         .onChange(of: name) { newValue in
                                             scheduleLookup(for: newValue)
                                             if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -89,7 +86,7 @@ struct AddEditSubscriptionView: View {
                                     // Category and Amount Row
                                     HStack(spacing: 16) {
                                         VStack(alignment: .leading, spacing: 8) {
-                                            Text("Category *")
+                                            Text("Category")
                                                 .font(.subheadline)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(validationErrors.contains("category") ? .red : themeManager.selectedTheme.textPrimary)
@@ -113,11 +110,12 @@ struct AddEditSubscriptionView: View {
                                                 .padding(.vertical, 12)
                                                 .background(themeManager.selectedTheme.secondary)
                                                 .cornerRadius(12)
+                                                .frame(height: fieldHeight)
                                             }
                                         }
                                         
                                         VStack(alignment: .leading, spacing: 8) {
-                                            Text("Amount *")
+                                            Text("Amount")
                                                 .font(.subheadline)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(showValidationErrors && validationErrors.contains("amount") ? .red : themeManager.selectedTheme.textPrimary)
@@ -128,6 +126,7 @@ struct AddEditSubscriptionView: View {
                                                 text: $priceText,
                                                 keyboardType: .decimalPad
                                             )
+                                            .frame(height: fieldHeight)
                                             .onChange(of: priceText) { newValue in
                                                 if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                                     validationErrors.remove("amount")
@@ -137,10 +136,47 @@ struct AddEditSubscriptionView: View {
                                         }
                                     }
                                     
+                                    // Renewal Preference (full width)
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Renewal Preference")
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(themeManager.selectedTheme.textPrimary)
+
+                                        HStack(spacing: 8) {
+                                            ForEach(RenewalPreference.allCases) { pref in
+                                                let isSelected = pref == renewalPreference
+                                                Button(action: { withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) { renewalPreference = pref } }) {
+                                                    ZStack {
+                                                        if isSelected {
+                                                            Capsule()
+                                                                .fill(themeManager.selectedTheme.accent)
+                                                                .matchedGeometryEffect(id: "renewalPref", in: renewalPreferenceNamespace)
+                                                        }
+                                                        Text(pref.displayName)
+                                                            .font(.subheadline)
+                                                            .fontWeight(isSelected ? .semibold : .medium)
+                                                            .foregroundColor(isSelected ? Color.white : themeManager.selectedTheme.textSecondary)
+                                                            .frame(maxWidth: .infinity)
+                                                            .frame(height: 28)
+                                                    }
+                                                }
+                                                .buttonStyle(PlainButtonStyle())
+                                            }
+                                        }
+                                        .animation(.spring(response: 0.28, dampingFraction: 0.9), value: renewalPreference)
+                                        .padding(3)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 36)
+                                        .background(themeManager.selectedTheme.secondary)
+                                        .clipShape(Capsule())
+                                    }
+
                                     // Billing Cycle and Start Date Row
                                     HStack(spacing: 16) {
+                                        // Billing Cycle
                                         VStack(alignment: .leading, spacing: 8) {
-                                            Text("Billing Cycle *")
+                                            Text("Billing Cycle")
                                                 .font(.subheadline)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(validationErrors.contains("billingCycle") ? .red : themeManager.selectedTheme.textPrimary)
@@ -168,11 +204,12 @@ struct AddEditSubscriptionView: View {
                                                 .padding(.vertical, 12)
                                                 .background(themeManager.selectedTheme.secondary)
                                                 .cornerRadius(12)
+                                                .frame(height: fieldHeight)
                                             }
                                         }
-                                        
+                                        // Start Date
                                         VStack(alignment: .leading, spacing: 8) {
-                                            Text("Start Date *")
+                                            Text("Start Date")
                                                 .font(.subheadline)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(validationErrors.contains("startDate") ? .red : themeManager.selectedTheme.textPrimary)
@@ -184,6 +221,7 @@ struct AddEditSubscriptionView: View {
                                             .padding(.vertical, 12)
                                             .background(themeManager.selectedTheme.secondary)
                                             .cornerRadius(12)
+                                            .frame(height: fieldHeight)
                                             .onChange(of: startDate) { _ in
                                                 updateRenewalDate()
                                                 validationErrors.remove("startDate")
@@ -191,9 +229,29 @@ struct AddEditSubscriptionView: View {
                                         }
                                     }
                                     
+                                    // Remind Me
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack {
+                                            Text("Remind Me")
+                                                .font(.subheadline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(themeManager.selectedTheme.textPrimary)
+                                            Spacer()
+                                            Toggle("", isOn: Binding(
+                                                get: { remindMeEnabled },
+                                                set: { newValue in
+                                                    remindMeEnabled = newValue
+                                                    reminderDaysBefore = newValue ? 3 : nil
+                                                }
+                                            ))
+                                            .labelsHidden()
+                                            .tint(themeManager.selectedTheme.accent)
+                                        }
+                                    }
+
                                     // Shared With
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("Shared With")
+                                        Text("Shared With (optional)")
                                             .font(.subheadline)
                                             .fontWeight(.semibold)
                                             .foregroundColor(themeManager.selectedTheme.textPrimary)
@@ -204,15 +262,13 @@ struct AddEditSubscriptionView: View {
                                         )
                                         .textInputAutocapitalization(.never)
                                         .autocorrectionDisabled(true)
+                                        .frame(height: fieldHeight)
                                         
-                                        Text("Used to manage or invite shared members")
-                                            .font(.caption)
-                                            .foregroundColor(themeManager.selectedTheme.textSecondary)
                                     }
                                     
                                     // Notes
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("Notes")
+                                        Text("Notes (optional)")
                                             .font(.subheadline)
                                             .fontWeight(.semibold)
                                             .foregroundColor(themeManager.selectedTheme.textPrimary)
@@ -232,6 +288,7 @@ struct AddEditSubscriptionView: View {
                             }
                         }
                         .padding(.horizontal)
+
                         
                         Spacer(minLength: 5)
                     }
@@ -270,6 +327,9 @@ struct AddEditSubscriptionView: View {
         startDate = existing.startDate
         category = existing.category
         billingCycle = existing.billingCycle
+        renewalPreference = existing.renewalPreference
+        reminderDaysBefore = existing.reminderDaysBefore ?? 3
+        remindMeEnabled = existing.reminderDaysBefore != nil
         notes = existing.notes ?? ""
         cancelLink = existing.cancelLink
         cancelScheme = existing.cancelScheme
@@ -355,7 +415,9 @@ struct AddEditSubscriptionView: View {
             cancelScheme: cancelScheme,
             sharedWith: sharedWith,
             status: .active,
-            billingCycle: billingCycle
+            billingCycle: billingCycle,
+            renewalPreference: renewalPreference
+            , reminderDaysBefore: remindMeEnabled ? (reminderDaysBefore ?? 3) : nil
         )
         
         Task {
