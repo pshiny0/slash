@@ -71,147 +71,21 @@ struct RootView: View {
         }
         .onAppear {
             dataManager.configureIfNeeded()
-            configureGlobalAppearance()
         }
-        .onChange(of: themeManager.selectedTheme) { _ in
-            configureGlobalAppearance()
-        }
+        .preferredColorScheme(preferredColorScheme)
         .task {
             await NotificationsManager.requestAuthorization()
         }
     }
-    
-    private func configureGlobalAppearance() {
-        // Configure UINavigationBar appearance
-        let navBarAppearance = UINavigationBarAppearance()
-        navBarAppearance.configureWithTransparentBackground()
-        navBarAppearance.backgroundColor = UIColor(themeManager.selectedTheme.primary)
-        navBarAppearance.titleTextAttributes = [.foregroundColor: UIColor(themeManager.selectedTheme.accent)]
-        navBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(themeManager.selectedTheme.accent)]
-        
-        UINavigationBar.appearance().standardAppearance = navBarAppearance
-        UINavigationBar.appearance().compactAppearance = navBarAppearance
-        UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
-        
-        // Configure UITabBar appearance with hardcoded colors
-        let tabBarAppearance = UITabBarAppearance()
-        tabBarAppearance.configureWithOpaqueBackground()
-        
-        // Hardcoded colors based on theme
-        let backgroundColor: UIColor
-        let unselectedColor: UIColor
-        let selectedColor: UIColor
-        
-        if themeManager.selectedTheme.name.contains("Dark") {
-            // Dark theme: dark background, white/blue icons
-            backgroundColor = UIColor.black
-            unselectedColor = UIColor.white
-            selectedColor = UIColor(themeManager.selectedTheme.accent)
-        } else {
-            // Light theme: white background, black/blue icons
-            backgroundColor = UIColor.white
-            unselectedColor = UIColor.black
-            selectedColor = UIColor(themeManager.selectedTheme.accent)
-        }
-        
-        // Force solid background
-        tabBarAppearance.backgroundColor = backgroundColor
-        
-        // Configure normal (unselected) state
-        tabBarAppearance.stackedLayoutAppearance.normal.iconColor = unselectedColor
-        tabBarAppearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: unselectedColor,
-            .font: UIFont.systemFont(ofSize: 10, weight: .medium)
-        ]
-        
-        // Configure selected state
-        tabBarAppearance.stackedLayoutAppearance.selected.iconColor = selectedColor
-        tabBarAppearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .foregroundColor: selectedColor,
-            .font: UIFont.systemFont(ofSize: 10, weight: .semibold)
-        ]
-        
-        // Apply appearance to all tab bar states
-        UITabBar.appearance().standardAppearance = tabBarAppearance
-        UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
-        
-        // Force global tint colors
-        UITabBar.appearance().tintColor = selectedColor
-        UITabBar.appearance().unselectedItemTintColor = unselectedColor
-        
-        // Force update all existing tab bars with multiple attempts
-        DispatchQueue.main.async {
-            // First attempt - immediate
-            UIApplication.shared.connectedScenes.forEach { scene in
-                if let windowScene = scene as? UIWindowScene {
-                    windowScene.windows.forEach { window in
-                        window.subviews.forEach { subview in
-                            if let tabBar = subview as? UITabBar {
-                                tabBar.standardAppearance = tabBarAppearance
-                                tabBar.scrollEdgeAppearance = tabBarAppearance
-                                tabBar.tintColor = selectedColor
-                                tabBar.unselectedItemTintColor = unselectedColor
-                                tabBar.backgroundColor = backgroundColor
-                                tabBar.isTranslucent = false
-                                tabBar.barTintColor = backgroundColor
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Second attempt - after delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                UIApplication.shared.connectedScenes.forEach { scene in
-                    if let windowScene = scene as? UIWindowScene {
-                        windowScene.windows.forEach { window in
-                            window.subviews.forEach { subview in
-                                if let tabBar = subview as? UITabBar {
-                                    tabBar.standardAppearance = tabBarAppearance
-                                    tabBar.scrollEdgeAppearance = tabBarAppearance
-                                    tabBar.tintColor = selectedColor
-                                    tabBar.unselectedItemTintColor = unselectedColor
-                                    tabBar.backgroundColor = backgroundColor
-                                    tabBar.isTranslucent = false
-                                    tabBar.barTintColor = backgroundColor
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Third attempt - after longer delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                UIApplication.shared.connectedScenes.forEach { scene in
-                    if let windowScene = scene as? UIWindowScene {
-                        windowScene.windows.forEach { window in
-                            window.subviews.forEach { subview in
-                                if let tabBar = subview as? UITabBar {
-                                    tabBar.standardAppearance = tabBarAppearance
-                                    tabBar.scrollEdgeAppearance = tabBarAppearance
-                                    tabBar.tintColor = selectedColor
-                                    tabBar.unselectedItemTintColor = unselectedColor
-                                    tabBar.backgroundColor = backgroundColor
-                                    tabBar.isTranslucent = false
-                                    tabBar.barTintColor = backgroundColor
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Configure window background without forcing interface style
-        DispatchQueue.main.async {
-            UIApplication.shared.connectedScenes.forEach { scene in
-                if let windowScene = scene as? UIWindowScene {
-                    windowScene.windows.forEach { window in
-                        window.backgroundColor = UIColor(self.themeManager.selectedTheme.primary)
-                    }
-                }
-            }
+
+    private var preferredColorScheme: ColorScheme? {
+        switch themeManager.choice {
+        case .system:
+            return nil
+        case .light:
+            return .light
+        case .dark:
+            return .dark
         }
     }
 }

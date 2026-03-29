@@ -14,41 +14,18 @@ struct AnalyticsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                GradientBackground()
-                    .environmentObject(themeManager)
+                themeManager.selectedTheme.primary
+                    .ignoresSafeArea()
                 
                 ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 24) {
                         Color.clear.frame(height: 0).id("top")
-                        // Modern Header
-                        VStack(spacing: 16) {
-                            HStack {
-                                Text("Analytics")
-                                    .font(.tanTangkiwood(size: 36))
-                                    .foregroundColor(themeManager.selectedTheme.accent)
-                                
-                                Spacer()
-                            }
-                            
-                            // Time Frame Selector
-                            HStack(spacing: 8) {
-                                ForEach(TimeFrame.allCases, id: \.self) { timeframe in
-                                    Button(action: { selectedTimeframe = timeframe }) {
-                                        Text(timeframe.rawValue)
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(selectedTimeframe == timeframe ? .white : themeManager.selectedTheme.textSecondary)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 8)
-                                            .background(selectedTimeframe == timeframe ? themeManager.selectedTheme.accent : themeManager.selectedTheme.secondary)
-                                            .cornerRadius(20)
-                                    }
-                                }
-                            }
+                        AppTopSection {
+                            AppScreenTitle(title: "Analytics")
+                        } content: {
+                            timeframeSelector
                         }
-                        .padding(.horizontal)
-                        .padding(.top, -16)
                         
                         // Stats Cards
                         LazyVGrid(columns: [
@@ -198,6 +175,24 @@ struct AnalyticsView: View {
             .navigationBarHidden(true)
             .onAppear {
                 configureScrollbarAppearance()
+            }
+        }
+    }
+
+    private var timeframeSelector: some View {
+        HStack(spacing: 8) {
+            ForEach(TimeFrame.allCases, id: \.self) { timeframe in
+                Button(action: { selectedTimeframe = timeframe }) {
+                    Text(timeframe.rawValue)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(selectedTimeframe == timeframe ? .white : themeManager.selectedTheme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(selectedTimeframe == timeframe ? themeManager.selectedTheme.accent : themeManager.selectedTheme.secondary)
+                        .cornerRadius(20)
+                }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -566,5 +561,5 @@ struct ActivityItem: Codable, Identifiable {
 #Preview {
     AnalyticsView()
         .environmentObject(DataManager())
+        .environmentObject(ThemeManager())
 }
-

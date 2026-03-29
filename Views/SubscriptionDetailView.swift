@@ -301,4 +301,25 @@ struct DetailRowView: View {
     }
 }
 
-
+#Preview {
+    SubscriptionDetailView(
+        subscription: Subscription(
+            id: UUID().uuidString,
+            name: "Netflix",
+            price: 15.99,
+            renewalDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date(),
+            startDate: Calendar.current.date(byAdding: .month, value: -5, to: Date()) ?? Date(),
+            category: .entertainment,
+            notes: "Premium plan shared with family.",
+            ownerId: "preview-user",
+            cancelLink: URL(string: "https://www.netflix.com/cancelplan"),
+            sharedWith: ["alex@example.com"],
+            status: .active,
+            billingCycle: .monthly,
+            renewalPreference: .autoRenew,
+            reminderDaysBefore: 3
+        )
+    )
+    .environmentObject(DataManager())
+    .environmentObject(ThemeManager())
+}

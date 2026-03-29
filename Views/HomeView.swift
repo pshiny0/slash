@@ -1,28 +1,38 @@
 import SwiftUI
 import UIKit
 
+enum SubscriptionTab: String, CaseIterable, Hashable {
+    case all = "All"
+    case upcoming = "Upcoming"
+    case pending = "Pending"
+    case inactive = "Cancelled"
+}
+
 struct HomeView: View {
     @EnvironmentObject private var dataManager: DataManager
     @EnvironmentObject private var themeManager: ThemeManager
     @State private var showAdd: Bool = false
     @State private var searchText: String = ""
     @State private var filterCategory: SubscriptionCategory? = nil
-    @State private var showFilterMenu: Bool = false
-    @State private var viewportHeight: CGFloat = 0
+    @State private var selectedTab: SubscriptionTab = .all
     @AppStorage("needsAttentionExpanded") private var needsAttentionExpanded: Bool = false
     @AppStorage("inactiveExpanded") private var inactiveExpanded: Bool = false
+
+    private let categoryToSearchSpacing: CGFloat = 10
+    private let searchToListSpacing: CGFloat = 10
 
     private var upcomingRenewals: [Subscription] {
         dataManager.subscriptions.filter { sub in
             sub.isUpcoming && sub.status == .active
-        }.sorted { $0.daysUntilRenewal < $1.daysUntilRenewal }
+        }.sorted { $0.renewalDate < $1.renewalDate }
     }
     
     private var filteredSubscriptions: [Subscription] {
         dataManager.subscriptions.filter { sub in
             let matchesSearch = searchText.isEmpty || sub.name.localizedCaseInsensitiveContains(searchText)
             let matchesCat = filterCategory == nil || sub.category == filterCategory
-            return matchesSearch && matchesCat
+            let isVisibleStatus = sub.status != .canceled
+            return matchesSearch && matchesCat && isVisibleStatus
         }
     }
     
@@ -41,142 +51,91 @@ struct HomeView: View {
         filteredSubscriptions.filter { $0.status.isInactive }
             .sorted { $0.renewalDate < $1.renewalDate }
     }
+    
+    // Tab-specific subscription lists
+    private var allTabSubscriptions: [Subscription] {
+        filteredSubscriptions.sorted { $0.renewalDate < $1.renewalDate }
+    }
+    
+    private var upcomingTabSubscriptions: [Subscription] {
+        filteredSubscriptions.filter { $0.isUpcoming && $0.status == .active }
+            .sorted { $0.renewalDate < $1.renewalDate }
+    }
+    
+    private var pendingTabSubscriptions: [Subscription] {
+        filteredSubscriptions.filter { $0.status == .pendingDecision }
+            .sorted { $0.renewalDate < $1.renewalDate }
+    }
+    
+    private var inactiveTabSubscriptions: [Subscription] {
+        dataManager.subscriptions
+            .filter { sub in
+                let matchesSearch = searchText.isEmpty || sub.name.localizedCaseInsensitiveContains(searchText)
+                let matchesCat = filterCategory == nil || sub.category == filterCategory
+                return matchesSearch && matchesCat && sub.status == .canceled
+            }
+            .sorted { $0.renewalDate > $1.renewalDate }
+    }
+    
+    // Get subscriptions for currently selected tab
+    private var currentTabSubscriptions: [Subscription] {
+        switch selectedTab {
+        case .all:
+            return allTabSubscriptions
+        case .upcoming:
+            return upcomingTabSubscriptions
+        case .pending:
+            return pendingTabSubscriptions
+        case .inactive:
+            return inactiveTabSubscriptions
+        }
+    }
+    
+    // Get counts for each tab
+    private func countForTab(_ tab: SubscriptionTab) -> Int {
+        switch tab {
+        case .all:
+            return allTabSubscriptions.count
+        case .upcoming:
+            return upcomingTabSubscriptions.count
+        case .pending:
+            return pendingTabSubscriptions.count
+        case .inactive:
+            return inactiveTabSubscriptions.count
+        }
+    }
 
 
     var body: some View {
         NavigationStack {
             ZStack {
-                GradientBackground()
-                    .environmentObject(themeManager)
+                themeManager.selectedTheme.primary
+                    .ignoresSafeArea()
                 
+                // Scrollable Content
                 ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(spacing: 24) {
-                        Color.clear.frame(height: 0).id("top")
-                        // Modern Header
-                        VStack(spacing: 16) {
-                            HStack {
-                                Text("Hey, \(dataManager.currentUser?.displayName.components(separatedBy: " ").first ?? "User")")
-                                    .font(.tanTangkiwood(size: 36))
-                                    .foregroundColor(themeManager.selectedTheme.accent)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    Task {
-                                        // Force refresh subscriptions by restarting the listener
-                                        dataManager.refreshSubscriptions()
-                                    }
-                                }) {
-                                    Image(systemName: "arrow.clockwise")
-                                        .font(.title2)
-                                        .foregroundColor(themeManager.selectedTheme.accent)
-                                        .frame(width: 44, height: 44)
-                                        .background(themeManager.selectedTheme.accent.opacity(0.1))
-                                        .clipShape(Circle())
-                                }
-                            }
+                        LazyVStack(spacing: 0) {
+                            Color.clear.frame(height: 0).id("top")
                             
-                            // Search Bar
-                            HStack {
-                                Image(systemName: "magnifyingglass")
-                                    .foregroundColor(themeManager.selectedTheme.textSecondary)
-                                
-                                TextField("Search subscriptions...", text: $searchText)
-                                    .foregroundColor(themeManager.selectedTheme.textPrimary)
-                                    .tint(themeManager.selectedTheme.accent)
-                                    .placeholder(when: searchText.isEmpty) {
-                                        Text("Search subscriptions...")
-                                            .foregroundColor(themeManager.selectedTheme.textSecondary)
-                                    }
-                                
-                                if !searchText.isEmpty {
-                                    Button(action: { searchText = "" }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(themeManager.selectedTheme.textSecondary)
-                                    }
-                                }
-                            }
-                            .padding()
-                            .background(themeManager.selectedTheme.cardBackground)
-                            .cornerRadius(16)
-                            .shadow(color: themeManager.selectedTheme.textPrimary.opacity(0.05), radius: 4, x: 0, y: 2)
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, -16)
-                        
-                        // Filter Chips
-                        if filterCategory != nil {
-                            HStack {
-                                Text("Filtered by: \(filterCategory?.rawValue.capitalized ?? "")")
-                                    .font(.caption)
-                                    .foregroundColor(themeManager.selectedTheme.textSecondary)
-                                
-                                Spacer()
-                                
-                                Button(action: { filterCategory = nil }) {
-                                    Text("Clear")
-                                        .font(.caption)
-                                        .foregroundColor(themeManager.selectedTheme.accent)
-                                }
-                            }
-                            .padding(.horizontal)
-                        }
-                        
-                        // Upcoming Renewals Section
-                        if !upcomingRenewals.isEmpty {
-                            VStack(alignment: .leading, spacing: 16) {
+                            if filterCategory != nil {
                                 HStack {
-                                    Text("Upcoming Renewals")
-                                        .font(.title2)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(themeManager.selectedTheme.textPrimary)
-                                    
+                                    Text("Filtered by: \(filterCategory?.rawValue.capitalized ?? "")")
+                                        .font(.caption)
+                                        .foregroundColor(themeManager.selectedTheme.textSecondary)
+
                                     Spacer()
+
+                                    Button(action: { filterCategory = nil }) {
+                                        Text("Clear")
+                                            .font(.caption)
+                                            .foregroundColor(themeManager.selectedTheme.accent)
+                                    }
                                 }
                                 .padding(.horizontal)
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 12) {
-                                        ForEach(upcomingRenewals) { subscription in
-                                            NavigationLink(value: subscription.id) {
-                                                UpcomingRenewalCard(subscription: subscription)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                        }
-                                    }
-                                    .padding(.horizontal)
-                                }
                             }
-                        }
-                        
-                        // All Subscriptions Section
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Text("All Subscriptions")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(themeManager.selectedTheme.textPrimary)
-                                
-                                Spacer()
-                                
-                                Button(action: { showFilterMenu = true }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "line.3.horizontal.decrease.circle")
-                                        Text("Filter")
-                                    }
-                                    .font(.subheadline)
-                                    .foregroundColor(themeManager.selectedTheme.accent)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(themeManager.selectedTheme.secondary)
-                                    .cornerRadius(16)
-                                }
-                            }
-                            .padding(.horizontal)
-                            
-                            if filteredSubscriptions.isEmpty {
-                                // Empty State
+
+                            if currentTabSubscriptions.isEmpty {
                                 ModernCard {
                                     VStack(spacing: 20) {
                                         Image(systemName: "creditcard.circle")
@@ -204,58 +163,47 @@ struct HomeView: View {
                                 }
                                 .padding(.horizontal)
                             } else {
-                                LazyVStack(spacing: 12) {
-                                    // Active Subscriptions (no grouping header)
-                                    ForEach(activeSubscriptions) { subscription in
-                                        SubscriptionRowCard(subscription: subscription)
-                                    }
-                                    
-                                    // Needs Attention Section (Collapsible)
-                                    if !pendingSubscriptions.isEmpty {
-                                        CollapsibleSection(
-                                            title: "Needs Attention (\(pendingSubscriptions.count))",
-                                            isExpanded: $needsAttentionExpanded
-                                        ) {
-                                            ForEach(pendingSubscriptions) { subscription in
-                                                SubscriptionRowCard(subscription: subscription, isPending: true)
-                                            }
-                                        }
-                                    }
-                                    
-                                    // Inactive Section (Collapsible)
-                                    if !inactiveSubscriptions.isEmpty {
-                                        CollapsibleSection(
-                                            title: "Inactive (\(inactiveSubscriptions.count))",
-                                            isExpanded: $inactiveExpanded
-                                        ) {
-                                            ForEach(inactiveSubscriptions) { subscription in
-                                                SubscriptionRowCard(subscription: subscription)
-                                            }
-                                        }
+                                LazyVStack(spacing: 6) {
+                                    ForEach(currentTabSubscriptions) { subscription in
+                                        SubscriptionRowCard(subscription: subscription, isPending: subscription.status == .pendingDecision)
                                     }
                                 }
                                 .padding(.horizontal)
                             }
+
+                            Spacer(minLength: 5)
                         }
-                        
-                        // Add some bottom padding for the floating button
-                        Spacer(minLength: 5)
+                        .padding(.top, 2)
                     }
-                    // Remove minHeight so layout matches Analytics exactly
-                }
-                .onReceive(NotificationCenter.default.publisher(for: .slashTabChanged)) { _ in
-                    withAnimation(.easeInOut) { proxy.scrollTo("top", anchor: .top) }
-                }
-                .onChange(of: dataManager.searchQuery) { _ in
-                    withAnimation(.easeInOut) { proxy.scrollTo("top", anchor: .top) }
-                }
-                .onChange(of: dataManager.selectedCategory) { _ in
-                    withAnimation(.easeInOut) { proxy.scrollTo("top", anchor: .top) }
-                }
-                .onAppear { 
-                    proxy.scrollTo("top", anchor: .top)
-                    configureScrollbarAppearance()
-                }
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        AppTopSection(
+                            contentSpacing: categoryToSearchSpacing,
+                            header: {
+                                greetingHeader
+                            },
+                            content: {
+                                filtersHeader
+                            }
+                        )
+                        .background(
+                            themeManager.selectedTheme.primary
+                                .ignoresSafeArea(edges: .top)
+                        )
+                    }
+                    .coordinateSpace(name: "homeScroll")
+                    .onReceive(NotificationCenter.default.publisher(for: .slashTabChanged)) { _ in
+                        withAnimation(.easeInOut) { proxy.scrollTo("top", anchor: .top) }
+                    }
+                    .onChange(of: dataManager.searchQuery) { _ in
+                        withAnimation(.easeInOut) { proxy.scrollTo("top", anchor: .top) }
+                    }
+                    .onChange(of: dataManager.selectedCategory) { _ in
+                        withAnimation(.easeInOut) { proxy.scrollTo("top", anchor: .top) }
+                    }
+                    .onAppear { 
+                        proxy.scrollTo("top", anchor: .top)
+                        configureScrollbarAppearance()
+                    }
                 }
                 
                 // Floating Add Button above tab bar
@@ -290,18 +238,147 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("")
-            .navigationBarHidden(true)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .sheet(isPresented: $showAdd) {
                 AddEditSubscriptionView()
             }
-            .confirmationDialog("Filter by Category", isPresented: $showFilterMenu) {
-                Button("All Categories") { filterCategory = nil }
-                ForEach(SubscriptionCategory.allCases) { category in
-                    Button(category.displayName) { filterCategory = category }
-                }
-                Button("Cancel", role: .cancel) { }
-            }
             // Remove viewport tracking to mirror Analytics layout
+        }
+    }
+
+    private var greetingHeader: some View {
+        HStack {
+            Text("Hey, \(dataManager.currentUser?.displayName.components(separatedBy: " ").first ?? "User")")
+                .font(.tanTangkiwood(size: 32))
+                .foregroundColor(themeManager.selectedTheme.accent)
+
+            Spacer()
+
+            Button(action: {
+                Task {
+                    dataManager.refreshSubscriptions()
+                }
+            }) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.title3)
+                    .foregroundColor(themeManager.selectedTheme.accent)
+                    .frame(width: 36, height: 36)
+                    .background(themeManager.selectedTheme.accent.opacity(0.1))
+                    .clipShape(Circle())
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var filtersHeader: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                ForEach(SubscriptionTab.allCases, id: \.self) { tab in
+                    Button(action: { selectedTab = tab }) {
+                        Text(tab.rawValue)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(selectedTab == tab ? .white : themeManager.selectedTheme.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(selectedTab == tab ? themeManager.selectedTheme.accent : themeManager.selectedTheme.secondary)
+                            .cornerRadius(20)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.bottom, categoryToSearchSpacing)
+
+            searchBar
+                .padding(.bottom, searchToListSpacing)
+        }
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.primary)
+                    .padding(.leading, 12)
+
+                TextField("Search subscriptions...", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .foregroundColor(.primary)
+
+                Button(action: {}) {
+                    Image(systemName: "mic.fill")
+                        .foregroundColor(.primary)
+                }
+                .padding(.trailing, 12)
+            }
+            .frame(height: 44)
+            .padding(.horizontal, 8)
+            .background(
+                Capsule()
+                    .fill(themeManager.selectedTheme.cardBackground)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+            )
+
+            if !searchText.isEmpty {
+                Button(action: { searchText = "" }) {
+                    Image(systemName: "xmark")
+                        .foregroundColor(.primary)
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .frame(width: 44, height: 44)
+                .background(
+                    Circle()
+                        .fill(themeManager.selectedTheme.cardBackground)
+                )
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                )
+            } else {
+                categoryMenu
+            }
+        }
+    }
+
+    private var categoryMenu: some View {
+        Menu {
+            Button(action: { filterCategory = nil }) {
+                HStack {
+                    Text("All Categories")
+                    Spacer()
+                    if filterCategory == nil {
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+
+            ForEach(SubscriptionCategory.allCases) { category in
+                Button(action: { filterCategory = category }) {
+                    HStack {
+                        Text(category.displayName)
+                        Spacer()
+                        if filterCategory == category {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: filterCategory == nil ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill")
+                .foregroundColor(.primary)
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 44, height: 44)
+                .background(
+                    Circle()
+                        .fill(themeManager.selectedTheme.cardBackground)
+                )
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                )
         }
     }
     
@@ -315,7 +392,6 @@ struct HomeView: View {
             UIScrollView.appearance().indicatorStyle = .black
         }
     }
-
 }
 
 struct ModernSubscriptionCard: View {
@@ -996,5 +1072,129 @@ struct PendingReminderModal: View {
         }
     }
 }
+ 
+// MARK: - Glass Effect Modifier
+struct GlassEffectModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular)
+        } else {
+            content
+        }
+    }
+}
 
 
+ 
+ // MARK: - Native Search Bar
+struct NativeSearchBar: UIViewRepresentable {
+    @Binding var text: String
+    let placeholder: String
+    
+    func makeUIView(context: Context) -> UISearchBar {
+        let searchBar = UISearchBar()
+        searchBar.searchBarStyle = .minimal
+        searchBar.placeholder = placeholder
+        searchBar.delegate = context.coordinator
+        
+        // Configure for iOS 26 native glass effect
+        searchBar.backgroundImage = UIImage()
+        searchBar.backgroundColor = .clear
+        searchBar.barTintColor = .clear
+        searchBar.isTranslucent = true
+        searchBar.showsBookmarkButton = false
+        searchBar.showsCancelButton = false
+        
+        // Apply iOS 26 style immediately after layout
+        DispatchQueue.main.async {
+            self.applyIOS26GlassEffect(to: searchBar)
+        }
+        
+        return searchBar
+    }
+    
+    func updateUIView(_ searchBar: UISearchBar, context: Context) {
+        searchBar.text = text
+        
+        // Reapply glass effect when view updates
+        DispatchQueue.main.async {
+            self.applyIOS26GlassEffect(to: searchBar)
+        }
+    }
+    
+    private func applyIOS26GlassEffect(to searchBar: UISearchBar) {
+        guard let searchTextField = searchBar.value(forKey: "searchField") as? UITextField else { return }
+        
+        // Remove any existing blur views
+        searchTextField.subviews.forEach { subview in
+            if subview is UIVisualEffectView {
+                subview.removeFromSuperview()
+            }
+        }
+        
+        // iOS 26 glass effect with rounded edges
+        let blurEffect = UIBlurEffect(style: .systemMaterial)
+        let blurEffectView = UIVisualEffectView(effect: blurEffect)
+        
+        // Set up blur view to fill the text field with rounded corners
+        blurEffectView.translatesAutoresizingMaskIntoConstraints = false
+        searchTextField.insertSubview(blurEffectView, at: 0)
+        
+        NSLayoutConstraint.activate([
+            blurEffectView.topAnchor.constraint(equalTo: searchTextField.topAnchor),
+            blurEffectView.leadingAnchor.constraint(equalTo: searchTextField.leadingAnchor),
+            blurEffectView.trailingAnchor.constraint(equalTo: searchTextField.trailingAnchor),
+            blurEffectView.bottomAnchor.constraint(equalTo: searchTextField.bottomAnchor)
+        ])
+        
+        // Rounded edges for glass effect
+        blurEffectView.layer.cornerRadius = 10
+        blurEffectView.clipsToBounds = true
+        searchTextField.backgroundColor = .clear
+        searchTextField.layer.cornerRadius = 10
+        searchTextField.clipsToBounds = true
+        searchTextField.borderStyle = .none
+        
+        // Style for appearance
+        searchTextField.font = .systemFont(ofSize: 17)
+        searchTextField.textColor = .black
+        
+        // Adjust icon colors
+        if let leftView = searchTextField.leftView as? UIImageView {
+            leftView.tintColor = .black
+        }
+        
+        // Set placeholder color
+        searchTextField.attributedPlaceholder = NSAttributedString(
+            string: placeholder,
+            attributes: [.foregroundColor: UIColor.systemGray]
+        )
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UISearchBarDelegate {
+        let parent: NativeSearchBar
+        
+        init(_ parent: NativeSearchBar) {
+            self.parent = parent
+        }
+        
+        func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+            parent.text = searchText
+        }
+        
+        func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+            searchBar.resignFirstResponder()
+        }
+    }
+}
+
+#Preview {
+    HomeView()
+        .environmentObject(DataManager())
+        .environmentObject(ThemeManager())
+}

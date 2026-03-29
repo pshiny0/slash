@@ -24,7 +24,6 @@ struct AddEditSubscriptionView: View {
     @State private var validationErrors: Set<String> = []
     @State private var validationTrigger: Int = 0
     @State private var showValidationErrors: Bool = false
-    @Namespace private var renewalPreferenceNamespace
     private let fieldHeight: CGFloat = 44
     @State private var reminderDaysBefore: Int? = 3
     @State private var remindMeEnabled: Bool = true
@@ -45,10 +44,6 @@ struct AddEditSubscriptionView: View {
                                         .font(.title)
                                         .fontWeight(.bold)
                                         .foregroundColor(themeManager.selectedTheme.textPrimary)
-                                    
-                                    Text(existing == nil ? "Track a new subscription service" : "Update subscription details")
-                                        .font(.subheadline)
-                                        .foregroundColor(themeManager.selectedTheme.textSecondary)
                                 }
                                 
                                 Spacer()
@@ -74,6 +69,7 @@ struct AddEditSubscriptionView: View {
                                             text: $name
                                         )
                                         .frame(height: fieldHeight)
+                                        .clipShape(Capsule())
                                         .onChange(of: name) { newValue in
                                             scheduleLookup(for: newValue)
                                             if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -83,37 +79,43 @@ struct AddEditSubscriptionView: View {
                                         }
                                     }
                                     
-                                    // Category and Amount Row
-                                    HStack(spacing: 16) {
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            Text("Category")
-                                                .font(.subheadline)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(validationErrors.contains("category") ? .red : themeManager.selectedTheme.textPrimary)
-                                            
-                                            Menu {
-                                                ForEach(SubscriptionCategory.allCases) { cat in
-                                                    Button(action: { category = cat }) {
-                                                        Text(cat.displayName)
-                                                    }
-                                                }
-                                            } label: {
-                                                HStack {
-                                                    Text(category.displayName)
-                                                        .foregroundColor(themeManager.selectedTheme.textPrimary)
-                                                    Spacer()
-                                                    Image(systemName: "chevron.down")
-                                                        .foregroundColor(themeManager.selectedTheme.textSecondary)
-                                                        .font(.caption)
-                                                }
-                                                .padding(.horizontal, 16)
-                                                .padding(.vertical, 12)
-                                                .background(themeManager.selectedTheme.secondary)
-                                                .cornerRadius(12)
-                                                .frame(height: fieldHeight)
-                                            }
-                                        }
+                                    // Category (full width)
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Category")
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(validationErrors.contains("category") ? .red : themeManager.selectedTheme.textPrimary)
                                         
+                                        Menu {
+                                            ForEach(SubscriptionCategory.allCases) { cat in
+                                                Button(action: { 
+                                                    category = cat
+                                                    validationErrors.remove("category")
+                                                }) {
+                                                    Text(cat.displayName)
+                                                }
+                                            }
+                                        } label: {
+                                            HStack {
+                                                Text(category.displayName)
+                                                    .foregroundColor(themeManager.selectedTheme.textPrimary)
+                                                Spacer()
+                                                Image(systemName: "chevron.down")
+                                                    .foregroundColor(themeManager.selectedTheme.textSecondary)
+                                                    .font(.caption)
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 14)
+                                            .background(themeManager.selectedTheme.secondary)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: fieldHeight)
+                                            .clipShape(Capsule())
+                                        }
+                                    }
+                                    
+                                    // Amount and Start Date Row
+                                    HStack(spacing: 16) {
+                                        // Amount
                                         VStack(alignment: .leading, spacing: 8) {
                                             Text("Amount")
                                                 .font(.subheadline)
@@ -127,6 +129,7 @@ struct AddEditSubscriptionView: View {
                                                 keyboardType: .decimalPad
                                             )
                                             .frame(height: fieldHeight)
+                                            .clipShape(Capsule())
                                             .onChange(of: priceText) { newValue in
                                                 if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                                     validationErrors.remove("amount")
@@ -134,46 +137,64 @@ struct AddEditSubscriptionView: View {
                                                 }
                                             }
                                         }
+                                        
+                                        // Start Date
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("Start Date")
+                                                .font(.subheadline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(validationErrors.contains("startDate") ? .red : themeManager.selectedTheme.textPrimary)
+                                            
+                                            HStack {
+                                                DatePicker("", selection: $startDate, displayedComponents: .date)
+                                                    .datePickerStyle(.compact)
+                                                    .frame(maxWidth: .infinity)
+                                                    .labelsHidden()
+                                                Spacer()
+                                            } 
+                                            .frame(height: 45)
+                                            .background(themeManager.selectedTheme.secondary)
+                                            .clipShape(Capsule())
+                                                .onChange(of: startDate) { _ in
+                                                    updateRenewalDate()
+                                                    validationErrors.remove("startDate")
+                                                }
+                                        }
                                     }
                                     
-                                    // Renewal Preference (full width)
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("Renewal Preference")
-                                            .font(.subheadline)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(themeManager.selectedTheme.textPrimary)
+                                    // Renewal Preference and Billing Cycle Row
+                                    HStack(spacing: 16) {
+                                        // Renewal Preference
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("Renewal Preference")
+                                                .font(.subheadline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(themeManager.selectedTheme.textPrimary)
 
-                                        HStack(spacing: 8) {
-                                            ForEach(RenewalPreference.allCases) { pref in
-                                                let isSelected = pref == renewalPreference
-                                                Button(action: { withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) { renewalPreference = pref } }) {
-                                                    ZStack {
-                                                        if isSelected {
-                                                            Capsule()
-                                                                .fill(themeManager.selectedTheme.accent)
-                                                                .matchedGeometryEffect(id: "renewalPref", in: renewalPreferenceNamespace)
-                                                        }
+                                            Menu {
+                                                ForEach(RenewalPreference.allCases) { pref in
+                                                    Button(action: { renewalPreference = pref }) {
                                                         Text(pref.displayName)
-                                                            .font(.subheadline)
-                                                            .fontWeight(isSelected ? .semibold : .medium)
-                                                            .foregroundColor(isSelected ? Color.white : themeManager.selectedTheme.textSecondary)
-                                                            .frame(maxWidth: .infinity)
-                                                            .frame(height: 28)
                                                     }
                                                 }
-                                                .buttonStyle(PlainButtonStyle())
+                                            } label: {
+                                                HStack {
+                                                    Text(renewalPreference.displayName)
+                                                        .foregroundColor(themeManager.selectedTheme.textPrimary)
+                                                    Spacer()
+                                                    Image(systemName: "chevron.down")
+                                                        .foregroundColor(themeManager.selectedTheme.textSecondary)
+                                                        .font(.caption)
+                                                }
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 14)
+                                                .background(themeManager.selectedTheme.secondary)
+                                                .frame(maxWidth: .infinity)
+                                                .frame(height: fieldHeight)
+                                                .clipShape(Capsule())
                                             }
                                         }
-                                        .animation(.spring(response: 0.28, dampingFraction: 0.9), value: renewalPreference)
-                                        .padding(3)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 36)
-                                        .background(themeManager.selectedTheme.secondary)
-                                        .clipShape(Capsule())
-                                    }
 
-                                    // Billing Cycle and Start Date Row
-                                    HStack(spacing: 16) {
                                         // Billing Cycle
                                         VStack(alignment: .leading, spacing: 8) {
                                             Text("Billing Cycle")
@@ -201,30 +222,11 @@ struct AddEditSubscriptionView: View {
                                                         .font(.caption)
                                                 }
                                                 .padding(.horizontal, 16)
-                                                .padding(.vertical, 12)
+                                                .padding(.vertical, 14)
                                                 .background(themeManager.selectedTheme.secondary)
-                                                .cornerRadius(12)
+                                                .frame(maxWidth: .infinity)
                                                 .frame(height: fieldHeight)
-                                            }
-                                        }
-                                        // Start Date
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            Text("Start Date")
-                                                .font(.subheadline)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(validationErrors.contains("startDate") ? .red : themeManager.selectedTheme.textPrimary)
-                                            
-                                        DatePicker("", selection: $startDate, displayedComponents: .date)
-                                            .datePickerStyle(.compact)
-                                            .labelsHidden()
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 12)
-                                            .background(themeManager.selectedTheme.secondary)
-                                            .cornerRadius(12)
-                                            .frame(height: fieldHeight)
-                                            .onChange(of: startDate) { _ in
-                                                updateRenewalDate()
-                                                validationErrors.remove("startDate")
+                                                .clipShape(Capsule())
                                             }
                                         }
                                     }
@@ -263,6 +265,7 @@ struct AddEditSubscriptionView: View {
                                         .textInputAutocapitalization(.never)
                                         .autocorrectionDisabled(true)
                                         .frame(height: fieldHeight)
+                                        .clipShape(Capsule())
                                         
                                     }
                                     
@@ -280,9 +283,9 @@ struct AddEditSubscriptionView: View {
                                             }
                                             .padding()
                                             .background(themeManager.selectedTheme.secondary)
-                                            .cornerRadius(12)
                                             .foregroundColor(themeManager.selectedTheme.textPrimary)
                                             .tint(themeManager.selectedTheme.accent)
+                                            .clipShape(Capsule())
                                     }
                                 }
                             }
@@ -446,4 +449,31 @@ struct AddEditSubscriptionView: View {
     }
 }
 
+#Preview("Add") {
+    AddEditSubscriptionView()
+        .environmentObject(DataManager())
+        .environmentObject(ThemeManager())
+}
 
+#Preview("Edit") {
+    AddEditSubscriptionView(
+        existing: Subscription(
+            id: UUID().uuidString,
+            name: "Spotify",
+            price: 9.99,
+            renewalDate: Calendar.current.date(byAdding: .day, value: 14, to: Date()) ?? Date(),
+            startDate: Calendar.current.date(byAdding: .month, value: -2, to: Date()) ?? Date(),
+            category: .entertainment,
+            notes: "Student discount plan",
+            ownerId: "preview-user",
+            cancelLink: URL(string: "https://www.spotify.com/account/subscription/"),
+            sharedWith: [],
+            status: .active,
+            billingCycle: .monthly,
+            renewalPreference: .autoRenew,
+            reminderDaysBefore: 3
+        )
+    )
+    .environmentObject(DataManager())
+    .environmentObject(ThemeManager())
+}

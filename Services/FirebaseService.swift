@@ -23,16 +23,22 @@ final class FirebaseService {
         // Listen to auth state changes
         Auth.auth().addStateDidChangeListener { [weak self] _, user in
             if let user = user {
-                let slashUser = SlashUser(
-                    id: user.uid,
-                    email: user.email ?? "",
-                    displayName: user.displayName ?? "",
-                    profileImageURL: user.photoURL?.absoluteString,
-                    firstName: user.displayName?.components(separatedBy: " ").first,
-                    lastName: user.displayName?.components(separatedBy: " ").dropFirst().joined(separator: " "),
-                    provider: self?.getAuthProvider(from: user)
-                )
-                self?.authStateSubject.send(slashUser)
+                Task { @MainActor in
+                    // Load emailConnections from Firestore
+                    let emailConnections = await self?.loadEmailConnections(for: user.uid) ?? []
+                    
+                    let slashUser = SlashUser(
+                        id: user.uid,
+                        email: user.email ?? "",
+                        displayName: user.displayName ?? "",
+                        profileImageURL: user.photoURL?.absoluteString,
+                        firstName: user.displayName?.components(separatedBy: " ").first,
+                        lastName: user.displayName?.components(separatedBy: " ").dropFirst().joined(separator: " "),
+                        provider: self?.getAuthProvider(from: user),
+                        emailConnections: emailConnections
+                    )
+                    self?.authStateSubject.send(slashUser)
+                }
             } else {
                 self?.authStateSubject.send(nil)
             }
@@ -136,6 +142,34 @@ final class FirebaseService {
         // Auth state listener will handle updating the subject
         subscriptionsListener?.remove()
         subscriptionsListener = nil
+    }
+
+    func updateCurrentUserProfile(displayName: String, firstName: String?, lastName: String?) async throws {
+        guard let currentUser = Auth.auth().currentUser else {
+            throw NSError(domain: "FirebaseService", code: 1, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+        }
+
+        let trimmedDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedFirstName = firstName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedLastName = lastName?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let changeRequest = currentUser.createProfileChangeRequest()
+        changeRequest.displayName = trimmedDisplayName
+        try await changeRequest.commitChanges()
+
+        try await db.collection("users").document(currentUser.uid).setData([
+            "displayName": trimmedDisplayName,
+            "firstName": trimmedFirstName as Any,
+            "lastName": trimmedLastName as Any,
+        ], merge: true)
+
+        if let currentSlashUser = authStateSubject.value {
+            var updatedUser = currentSlashUser
+            updatedUser.displayName = trimmedDisplayName
+            updatedUser.firstName = trimmedFirstName
+            updatedUser.lastName = trimmedLastName
+            authStateSubject.send(updatedUser)
+        }
     }
 
     // MARK: - Subscriptions
@@ -302,6 +336,110 @@ final class FirebaseService {
         print("=== DELETE DEBUG END ===")
     }
     
+    // MARK: - Email Connections
+    func loadEmailConnections(for userId: String) async -> [EmailConnection] {
+        do {
+            let doc = try await db.collection("users").document(userId).getDocument()
+            guard doc.exists,
+                  let data = doc.data(),
+                  let connectionsData = data["emailConnections"] as? [[String: Any]] else {
+                return []
+            }
+            
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            var connections: [EmailConnection] = []
+            for connectionData in connectionsData {
+                if let jsonData = try? JSONSerialization.data(withJSONObject: connectionData),
+                   let connection = try? decoder.decode(EmailConnection.self, from: jsonData) {
+                    connections.append(connection)
+                }
+            }
+            
+            return connections
+        } catch {
+            print("Error loading email connections: \(error)")
+            return []
+        }
+    }
+    
+    func saveEmailConnection(_ connection: EmailConnection, for userId: String) async throws {
+        guard let currentUser = Auth.auth().currentUser,
+              currentUser.uid == userId else {
+            throw NSError(domain: "FirebaseService", code: 1, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+        }
+        
+        // Load existing connections
+        var connections = await loadEmailConnections(for: userId)
+        
+        // Check if connection with this email already exists
+        if let index = connections.firstIndex(where: { $0.emailAddress == connection.emailAddress }) {
+            // Update existing connection
+            connections[index] = connection
+        } else {
+            // Add new connection
+            connections.append(connection)
+        }
+        
+        // Save to Firestore
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        
+        let connectionsData = try connections.map { conn -> [String: Any] in
+            let data = try encoder.encode(conn)
+            return try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        }
+        
+        try await db.collection("users").document(userId).setData([
+            "emailConnections": connectionsData
+        ], merge: true)
+        
+        // Update auth state subject with new connections
+        if let currentSlashUser = authStateSubject.value {
+            var updatedUser = currentSlashUser
+            updatedUser.emailConnections = connections
+            authStateSubject.send(updatedUser)
+        }
+    }
+    
+    func updateEmailConnection(_ connection: EmailConnection, for userId: String) async throws {
+        try await saveEmailConnection(connection, for: userId)
+    }
+    
+    func deleteEmailConnection(id: UUID, for userId: String) async throws {
+        guard let currentUser = Auth.auth().currentUser,
+              currentUser.uid == userId else {
+            throw NSError(domain: "FirebaseService", code: 1, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+        }
+        
+        // Load existing connections
+        var connections = await loadEmailConnections(for: userId)
+        
+        // Remove connection
+        connections.removeAll { $0.id == id }
+        
+        // Save to Firestore
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        
+        let connectionsData = try connections.map { conn -> [String: Any] in
+            let data = try encoder.encode(conn)
+            return try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        }
+        
+        try await db.collection("users").document(userId).setData([
+            "emailConnections": connectionsData
+        ], merge: true)
+        
+        // Update auth state subject with new connections
+        if let currentSlashUser = authStateSubject.value {
+            var updatedUser = currentSlashUser
+            updatedUser.emailConnections = connections
+            authStateSubject.send(updatedUser)
+        }
+    }
+    
     // MARK: - Helper Functions
     private func getAuthProvider(from user: FirebaseAuth.User) -> AuthProvider {
         // Check if user signed in with Google
@@ -320,6 +458,5 @@ final class FirebaseService {
     
 
 }
-
 
 

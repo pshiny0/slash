@@ -278,4 +278,8 @@ struct AuthView: View {
     }
 }
 
-
+#Preview {
+    AuthView()
+        .environmentObject(DataManager())
+        .environmentObject(ThemeManager())
+}

@@ -10,64 +10,19 @@ struct SharedView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                GradientBackground()
-                    .environmentObject(themeManager)
+                themeManager.selectedTheme.primary
+                    .ignoresSafeArea()
                 
                 ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: 24) {
                         Color.clear.frame(height: 0).id("top")
-                        // Header
-                        VStack(spacing: 16) {
-                            HStack {
-                                Text("Sharing")
-                                    .font(.tanTangkiwood(size: 36))
-                                    .foregroundColor(themeManager.selectedTheme.accent)
-                                
-                                Spacer()
-                            }
+                        AppTopSection {
+                            AppScreenTitle(title: "Sharing")
+                        } content: {
+                            sharingOverviewCard
                         }
-                        .padding(.horizontal)
-                        .padding(.top, -16)
-                        
-                        // Sharing Stats Card
-                        ModernCard {
-                            VStack(spacing: 20) {
-                                HStack {
-                                    Text("Sharing Overview")
-                                        .font(.headline)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(themeManager.selectedTheme.textPrimary)
-                                    
-                                    Spacer()
-                                }
-                                
-                                HStack(spacing: 20) {
-                                    SharingStatView(
-                                        icon: "person.2.fill",
-                                        title: "Shared",
-                                        value: "\(sharedSubscriptions.count)",
-                                        color: themeManager.selectedTheme.accent
-                                    )
-                                    
-                                    SharingStatView(
-                                        icon: "person.3.fill",
-                                        title: "Family Plans",
-                                        value: "\(familyPlans.count)",
-                                        color: themeManager.selectedTheme.success
-                                    )
-                                    
-                                    SharingStatView(
-                                        icon: "dollarsign.circle.fill",
-                                        title: "Saved",
-                                        value: monthlySavingsText,
-                                        color: themeManager.selectedTheme.warning
-                                    )
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                        
+
                         // Quick Actions
                         ModernCard {
                             VStack(spacing: 20) {
@@ -215,6 +170,44 @@ struct SharedView: View {
         .sheet(isPresented: $showFamilyInvite) {
             FamilyInviteView()
                 .environmentObject(themeManager)
+        }
+    }
+
+    private var sharingOverviewCard: some View {
+        ModernCard {
+            VStack(spacing: 20) {
+                HStack {
+                    Text("Sharing Overview")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(themeManager.selectedTheme.textPrimary)
+
+                    Spacer()
+                }
+
+                HStack(spacing: 20) {
+                    SharingStatView(
+                        icon: "person.2.fill",
+                        title: "Shared",
+                        value: "\(sharedSubscriptions.count)",
+                        color: themeManager.selectedTheme.accent
+                    )
+
+                    SharingStatView(
+                        icon: "person.3.fill",
+                        title: "Family Plans",
+                        value: "\(familyPlans.count)",
+                        color: themeManager.selectedTheme.success
+                    )
+
+                    SharingStatView(
+                        icon: "dollarsign.circle.fill",
+                        title: "Saved",
+                        value: monthlySavingsText,
+                        color: themeManager.selectedTheme.warning
+                    )
+                }
+            }
         }
     }
     
@@ -540,4 +533,5 @@ struct FamilyPlan {
 #Preview {
     SharedView()
         .environmentObject(DataManager())
+        .environmentObject(ThemeManager())
 }

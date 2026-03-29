@@ -22,7 +22,7 @@ final class DataManager: ObservableObject {
     @Published var monthlyBudget: Double = 0.0
 
     private var cancellables: Set<AnyCancellable> = []
-    private let firebase = FirebaseService()
+    let firebase = FirebaseService()
     private var isConfigured = false
 
     func configureIfNeeded() {
@@ -68,6 +68,14 @@ final class DataManager: ObservableObject {
 
     func signOut() throws {
         try firebase.signOut()
+    }
+
+    func updateCurrentUserProfile(displayName: String, firstName: String?, lastName: String?) async throws {
+        try await firebase.updateCurrentUserProfile(
+            displayName: displayName,
+            firstName: firstName,
+            lastName: lastName
+        )
     }
 
     // MARK: - Subscriptions
@@ -279,6 +287,105 @@ final class DataManager: ObservableObject {
         serviceDirectory.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
     }
     
+    // MARK: - Gmail Sync
+    private let gmailSync = GmailSyncService()
+    
+    func syncAllGmailConnections() async throws {
+        guard let user = currentUser else {
+            throw NSError(domain: "DataManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+        }
+        
+        // Sync each email connection independently
+        for var connection in user.emailConnections {
+            do {
+                // Sync this connection
+                let result = try await syncGmailConnection(connection)
+                
+                // Update access token if refreshed
+                if let newAccessToken = result.newAccessToken {
+                    connection.accessToken = newAccessToken
+                    connection.lastSync = Date()
+                    
+                    // Update connection in Firestore
+                    try await firebase.updateEmailConnection(connection, for: user.id)
+                }
+            } catch {
+                print("Error syncing connection \(connection.emailAddress): \(error)")
+                // Mark as expired if refresh failed
+                if let gmailError = error as? GmailSyncError,
+                   case .tokenRefreshFailed = gmailError {
+                    // Connection will be marked as expired on next load
+                }
+            }
+        }
+    }
+    
+    private func syncGmailConnection(_ connection: EmailConnection) async throws -> GmailSyncResult {
+        // Sync Gmail
+        let syncResult = try await gmailSync.syncGmail(connection: connection)
+        
+        // Parse messages and create/update subscriptions
+        // Note: This is a placeholder - actual parsing would happen in GmailSyncService
+        // The real implementation would fetch messages, parse them, and create subscriptions
+        
+        return syncResult
+    }
+    
+    // MARK: - Deduping
+    private func generateSubscriptionHash(merchant: String, price: Double, frequency: String) -> String {
+        return GmailSyncService.generateSubscriptionHash(merchant: merchant, price: price, frequency: frequency)
+    }
+    
+    func addOrUpdateSubscriptionFromEmail(merchant: String, price: Double, frequency: String, billingDate: Date?) async throws {
+        guard let user = currentUser else {
+            throw NSError(domain: "DataManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "User not authenticated"])
+        }
+        
+        // Generate hash for deduping
+        let hash = generateSubscriptionHash(merchant: merchant, price: price, frequency: frequency)
+        
+        // Check if subscription with this hash already exists
+        let existingSubscription = subscriptions.first { sub in
+            // For now, check by name and price - in a full implementation, we'd store the hash
+            sub.name.lowercased() == merchant.lowercased() && abs(sub.price - price) < 0.01
+        }
+        
+        if let existing = existingSubscription {
+            // Update existing subscription
+            var updated = existing
+            updated.price = price
+            // Update other fields as needed
+            
+            try await updateSubscription(updated)
+        } else {
+            // Create new subscription
+            // Map frequency string to BillingCycle
+            let billingCycle: BillingCycle = {
+                switch frequency.lowercased() {
+                case "yearly", "annual": return .yearly
+                case "quarterly": return .quarterly
+                case "weekly": return .weekly
+                default: return .monthly
+                }
+            }()
+            
+            let renewalDate = billingDate ?? billingCycle.calculateRenewalDate(from: Date())
+            
+            let newSubscription = Subscription(
+                id: UUID().uuidString,
+                name: merchant,
+                price: price,
+                renewalDate: renewalDate,
+                startDate: billingDate ?? Date(),
+                category: .other,
+                ownerId: user.id,
+                billingCycle: billingCycle
+            )
+            
+            try await addSubscription(newSubscription)
+        }
+    }
+    
     // TEMPORARY: For testing purposes only
     func skipAuthenticationForTesting() {
         let mockUser = SlashUser(
@@ -288,7 +395,8 @@ final class DataManager: ObservableObject {
             profileImageURL: nil,
             firstName: "Test",
             lastName: "User",
-            provider: .email
+            provider: .email,
+            emailConnections: []
         )
         
         DispatchQueue.main.async {
@@ -297,5 +405,4 @@ final class DataManager: ObservableObject {
         }
     }
 }
-
 
